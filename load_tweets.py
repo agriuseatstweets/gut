@@ -26,6 +26,7 @@ def load_tweets2df(dir_p, attrs, ext=None):
     attrs: list of str
         attributes to be extracted from tweet object,
         e.g. 'id_str' or 'user.screen_name' for nested values
+             or 'user.entities.,screen_name' if last nesting layer is list-like
 
     :returns:
     pd.Dataframe with the extracted attributes
@@ -36,6 +37,18 @@ def load_tweets2df(dir_p, attrs, ext=None):
         for t in f:
             for a in attrs:
                 keys = a.split('.')
-                data[a] += [safe_get(t, *keys)]
+                if ',' in ''.join(keys):
+                    if ',' in keys[-1]:
+                        _, key_emb = keys[-1].split(',')
+                        vs = safe_get(t, *keys[:-1])
+                        data[a] += [{x[key_emb] for x in vs}]
+                    else:
+                        raise NotImplementedError('Only implemented for comma on final nesting level.')
+                else:
+                    data[a] += [safe_get(t, *keys)]
     df = pd.DataFrame(data)
     return df
+
+
+
+
