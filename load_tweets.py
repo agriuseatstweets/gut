@@ -41,7 +41,7 @@ def load_tweets2df(dir_p, attrs, ext=None):
                     if ',' in keys[-1]:
                         _, key_emb = keys[-1].split(',')
                         vs = safe_get(t, *keys[:-1])
-                        data[a] += [{x[key_emb] for x in vs}]
+                        data[a] += [{x[key_emb] for x in vs}] if vs else [{}]
                     else:
                         raise NotImplementedError('Only implemented for comma on final nesting level.')
                 else:
