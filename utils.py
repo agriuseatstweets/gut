@@ -1,6 +1,7 @@
 import pickle
 import os
 
+
 def load_pickle(fp):
     with open(fp, 'rb') as f:
         return pickle.load(f)
@@ -19,6 +20,7 @@ def get_abs_fps(dir_p, ext=None):
             if ext == None or os.path.splitext(f)[1] == ext:
                 yield os.path.abspath(os.path.join(dir_p, f))
 
+
 def safe_get(dct, *keys):
     for key in keys:
         try:
@@ -26,3 +28,7 @@ def safe_get(dct, *keys):
         except KeyError:
             return None
     return dct
+
+
+def is_setofstr(x):
+    return isinstance(x, set) and all(isinstance(y, str) for y in x)
