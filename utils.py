@@ -1,5 +1,7 @@
 import pickle
 import os
+import types
+from itertools import compress
 
 
 def load_pickle(fp):
@@ -33,5 +35,41 @@ def safe_get(dct, *keys):
 def is_setofstr(x):
     return isinstance(x, set) and all(isinstance(y, str) for y in x)
 
-def isin_listofsets(x, listofsets):
-    return (x in s for s in listofsets)
+
+def isin_listofsets(x, listofsets, return_int=False):
+    if return_int:
+        return (1 if x in s else 0 for s in listofsets)
+    else:
+        return (x in s for s in listofsets)
+
+[3 if 3 in [3] else 0 for _ in range(3)]
+
+def pairwise_combs(a):
+    r = []
+    for i, x in enumerate(a):
+        for j, y in enumerate(a):
+            if i < j:
+                r += [(x, y)]
+    return r
+
+
+def innerjoin_lists(*lists):
+    r_s = set(lists[0])
+    for l in lists[1:]:
+        l_s = set(l)
+        r_s = r_s.intersection(l_s)
+    return list(r_s)
+
+
+def outerjoin_lists(*lists):
+    r_s = set()
+    for l in lists:
+        l_s = set(l)
+        r_s = r_s.union(l_s)
+    return list(r_s)
+
+
+def get_idxs_true(l):
+    if isinstance(l, types.GeneratorType):
+        l = list(l)
+    return list(compress(range(len(l)), l))

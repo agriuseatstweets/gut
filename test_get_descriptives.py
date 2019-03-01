@@ -39,14 +39,13 @@ def follower_count():
 
 
 def test_get_follower_counts(tweet_df, follower_count):
-    np.random.seed(40)
-    user = list(np.random.choice(np.unique(tweet_df['user.screen_name']), 10, replace=False))
+    user = np.unique(tweet_df['user.screen_name'])[:200]
     assert get_follower_counts(tweet_df, user).equals(follower_count)
 
 
 @pytest.fixture
 def original_tweet_count():
-    return pd.read_pickle('test_data/df2_original_tweet_count')
+    return pd.read_pickle('test_data/df2_original_tweet_count.pickle')
 
 
 def test_get_original_tweet_count(tweet_df, original_tweet_count):
@@ -56,7 +55,7 @@ def test_get_original_tweet_count(tweet_df, original_tweet_count):
 
 @pytest.fixture
 def reply_count():
-    return pd.read_pickle('test_data/df2_reply_count')
+    return pd.read_pickle('test_data/df2_reply_count.pickle')
 
 
 def test_get_reply_count(tweet_df, reply_count):
@@ -65,20 +64,37 @@ def test_get_reply_count(tweet_df, reply_count):
 
 
 @pytest.fixture
-def retweet_counts():
-    return pd.read_pickle('test_data/df2_retweet_counts')
+def retweet_count():
+    return pd.read_pickle('test_data/df2_retweet_count.pickle')
 
 
-def test_get_retweet_counts(tweet_df, retweet_counts):
+def test_get_retweet_count(tweet_df, retweet_count):
     user = np.unique(tweet_df['user.screen_name'])
-    assert get_retweet_counts(tweet_df, user).equals(retweet_counts)
+    assert get_retweet_count(tweet_df, user).equals(retweet_count)
 
 
 @pytest.fixture
 def mention_count():
-    return pd.read_pickle('test_data/df2_mention_count')
+    return pd.read_pickle('test_data/df2_mention_count.pickle')
 
 
 def test_get_retweet_counts(tweet_df, mention_count):
-    user = np.unique(tweet_df['user.screen_name'])[:200]
+    user = np.unique(tweet_df['user.screen_name'])[:50]
     assert get_mention_count(tweet_df, user).equals(mention_count)
+
+
+def test_get_edge_weights():
+    tweet_df = pd.DataFrame(
+        {'user.screen_name': ['a', 'a', 'b', 'b', 'c', 'c', 'd', 'a', 'b'],
+         'in_reply_to_screen_name': [1, 2, 1, 2, 1, 1, 2, 1, 3],
+         'retweeted_status.user.screen_name': [1, 2, 1, 2, 1, 1, 2, 1, 3],
+         'entities.user_mentions.,screen_name': [{1, 2, 3}, {1}, {3, 4}, {1}, {2}, {1}, {2}, {1}, {1}]}
+    )
+    edge_weights = pd.DataFrame(
+        {'user1': [1, 1, 1, 2, 2, 3],
+         'user2': [2, 3, 4, 3, 4, 4],
+         'weight replies': [2, 1, 0, 1, 0, 0],
+         'weight retweets': [2, 1, 0, 1, 0, 0],
+         'weight mentions': [2, 2, 1, 1, 0, 1]}
+    )
+    assert get_edge_weights(tweet_df, [1, 2, 3, 4]).equals(edge_weights)
