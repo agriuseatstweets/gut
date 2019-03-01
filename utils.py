@@ -32,3 +32,6 @@ def safe_get(dct, *keys):
 
 def is_setofstr(x):
     return isinstance(x, set) and all(isinstance(y, str) for y in x)
+
+def isin_listofsets(x, listofsets):
+    return (x in s for s in listofsets)
