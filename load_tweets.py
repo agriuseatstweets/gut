@@ -4,7 +4,6 @@ from tqdm import tqdm
 from utils import *
 
 
-
 def load_tweets(fp):
     with open(fp, 'r') as f:
         tweets = (json.loads(line) for line in f.readlines())
@@ -48,3 +47,26 @@ def load_tweets2df(dir_p, attrs, ext=None):
                     data[a] += [safe_get(t, *keys)]
     df = pd.DataFrame(data)
     return df
+
+
+def tweet_attrs():
+    '''t tweet attributes'''
+    attrs = ['created_at', 'id_str',
+             'user.screen_name', 'user.followers_count', 'user.friends_count',
+             'in_reply_to_status_id_str', 'in_reply_to_screen_name',
+             'retweeted_status.id_str', 'retweeted_status.user.screen_name',
+             'quoted_status.id_str',
+             'entities.user_mentions.,screen_name']
+    return attrs
+
+
+def timezone():
+    return 'Asia/Kolkata'
+
+
+def preproc_tweet_df(tweet_df, tz):
+    '''preprocessing for tweet_dataframe'''
+    tweet_df['created_at'] = pd.to_datetime(tweet_df['created_at'], utc=True).dt.tz_convert(tz)
+    tweet_df['created_at_D'] = tweet_df['created_at'].dt.floor('D')
+    tweet_df = tweet_df.drop(tweet_df[tweet_df['id_str'].isnull()].index)
+    return tweet_df

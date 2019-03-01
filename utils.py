@@ -42,7 +42,6 @@ def isin_listofsets(x, listofsets, return_int=False):
     else:
         return (x in s for s in listofsets)
 
-[3 if 3 in [3] else 0 for _ in range(3)]
 
 def pairwise_combs(a):
     r = []

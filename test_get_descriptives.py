@@ -17,20 +17,38 @@ def tweet_df():
     return pd.read_pickle('test_data/df2.pickle')
 
 
-#def test_tweet_df_dtypes(tweet_df):
-#    assert tweet_df['created_at'].dtype == 'datetime64[ns, Asia/Kolkata]'
-#    assert all(isinstance(x, str) for x in tweet_df['id_str'])
-#    assert all(isinstance(x, str) for x in tweet_df['user.screen_name'])
-#    assert tweet_df['user.followers_count'].dtype == 'float64'
-#    assert tweet_df['user.friends_count'].dtype == 'float64'
-#    assert all(x is None or isinstance(x, str) for x in tweet_df['in_reply_to_status_id_str'])
-#    assert all(x is None or isinstance(x, str) for x in tweet_df['in_reply_to_screen_name'])
-#    assert all(x is None or isinstance(x, str) for x in tweet_df['quoted_status_id_str'])
-#    assert tweet_df['quoted_status.retweet_count'].dtype == 'float64'
-#    assert all(x is None or isinstance(x, str) for x in tweet_df['retweeted_status.id_str'])
-#    assert tweet_df['retweeted_status.retweet_count'].dtype == 'float64'
-#    assert all(x == {} or is_setofstr(x) for x in tweet_df['entities.user_mentions.,screen_name'])
+def test_tweet_df_dtypes(tweet_df):
+    assert tweet_df['created_at'].dtype == 'datetime64[ns, Asia/Kolkata]'
+    assert tweet_df['created_at_D'].dtype == 'datetime64[ns, Asia/Kolkata]'
+    assert all(isinstance(x, str) for x in tweet_df['id_str'])
+    assert all(isinstance(x, str) for x in tweet_df['user.screen_name'])
+    assert tweet_df['user.followers_count'].dtype == 'float64'
+    assert tweet_df['user.friends_count'].dtype == 'float64'
+    assert all(x is None or isinstance(x, str) for x in tweet_df['in_reply_to_status_id_str'])
+    assert all(x is None or isinstance(x, str) for x in tweet_df['in_reply_to_screen_name'])
+    assert all(x is None or isinstance(x, str) for x in tweet_df['retweeted_status.id_str'])
+    assert all(x is None or isinstance(x, str) for x in tweet_df['retweeted_status.user.screen_name'])
+    assert all(x is None or isinstance(x, str) for x in tweet_df['quoted_status.id_str'])
+    assert all(x == {} or is_setofstr(x) for x in tweet_df['entities.user_mentions.,screen_name'])
 
+
+def test_tweet_df_integrity(tweet_df):
+    assert all(
+            tweet_df
+            .loc[tweet_df['in_reply_to_status_id_str']
+            .isin(tweet_df['id_str'])]
+            ['in_reply_to_status_id_str']
+            .isnull() ==
+            tweet_df
+            .loc[tweet_df['in_reply_to_status_id_str']
+            .isin(tweet_df['id_str'])]
+            ['in_reply_to_screen_name']
+            .isnull()
+    )
+    assert all(
+        tweet_df['retweeted_status.id_str'].isnull()
+        == tweet_df['retweeted_status.user.screen_name'].isnull()
+    )
 
 
 @pytest.fixture
