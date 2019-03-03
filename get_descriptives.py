@@ -30,6 +30,7 @@ def get_original_tweet_count(tweet_df, user):
     :param list user: target users
     :returns pd.DataFrame df_out: dataframe with 'original_tweet_count' by user
     '''
+    print('--- Getting original tweet count ...')
     df_out = tweet_df[['id_str', 'created_at_D', 'user.screen_name', 'in_reply_to_status_id_str',
                        'retweeted_status.id_str', 'quoted_status.id_str']]
     df_out = df_out.loc[df_out['user.screen_name'].isin(user)]
@@ -55,6 +56,7 @@ def get_reply_count(tweet_df, user):
     :returns pd.DataFrame df_out: dataframe with aggregated 'reply_count' by user
     '''
     #df = df[['id_str', 'user.screen_name', 'in_reply_to_status_id_str', 'in_reply_to_screen_name']]
+    print('--- Getting reply count ...')
     df_out = tweet_df\
         .loc[tweet_df['in_reply_to_screen_name'].isin(user)
              & tweet_df['in_reply_to_status_id_str'].isin(tweet_df['id_str'])] \
@@ -75,6 +77,7 @@ def get_retweet_count(tweet_df, user):
     :returns pd.DataFrame df_out: dataframe with 'retweeted_count_from_embedded_objects' and 'retweeted_count_counted'
                                   by user
     '''
+    print('--- Getting retweet count ...')
     df_out = tweet_df\
         .loc[tweet_df['retweeted_status.user.screen_name'].isin(user)
              & tweet_df['retweeted_status.id_str'].isin(tweet_df['id_str'])] \
@@ -96,7 +99,8 @@ def get_mention_count(tweet_df, user):
     '''
     df_fil = tweet_df[['entities.user_mentions.,screen_name', 'created_at_D']].copy()
     res = []
-    for u in user:
+    print('--- Getting mention count ...')
+    for u in tqdm(user):
         df_fil.loc[:, 'mention_count'] = list(isin_listofsets(u, df_fil['entities.user_mentions.,screen_name']))
         df_fil.loc[:, 'user'] = u
         res += [
@@ -123,6 +127,7 @@ def get_edge_weights(tweet_df, user):
     '''
     user_combs = pairwise_combs(user)
     res = []
+    print('--- Getting edge weights ...')
     for u1, u2 in tqdm(user_combs):
         w_reply = tweet_df\
             [tweet_df['in_reply_to_screen_name'].isin([u1, u2])]\
@@ -181,7 +186,9 @@ def get_descriptives(tweet_df, media_outlets, parties, candidates, dir_out_p):
     all_user = (media_outlets, parties, candidates)
     all_user_n = ('media_outlets', 'parties', 'candidates')
 
-    for user, user_n in zip(all_user, all_user_n):
+    for i, (user, user_n) in enumerate(zip(all_user, all_user_n)):
+
+        print('Getting descriptives for', user_n, str(i+1) + '/' + str(len(all_user_n)))
 
         # follower counts
         get_follower_counts(tweet_df, user).to_csv(dir_out_p + 'follower_counts_' + user_n + '.csv')
@@ -210,3 +217,5 @@ def get_descriptives(tweet_df, media_outlets, parties, candidates, dir_out_p):
 
         # edges weights
         get_edge_weights(tweet_df, user).to_csv(dir_out_p + 'edges_weights_' + user_n + '.csv')
+
+    print('Getting descriptives completed.')

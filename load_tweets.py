@@ -67,7 +67,7 @@ def preproc_tweet_df(tweet_df, tz):
     return tweet_df
 
 
-def load_tweets(dir_p, tz, ext, tweet_attrs=tweet_attrs()):
+def load_tweets(dir_p, tz, ext):
     '''
     wrapper for tweet loading
 
@@ -79,10 +79,8 @@ def load_tweets(dir_p, tz, ext, tweet_attrs=tweet_attrs()):
                        or 'user.entities.,screen_name' if last nesting layer is list-like
     :returns pd.DataFrame df: dataframe with extracted attributes
     '''
-
-    tweet_df = load_tweets2df(dir_p, tweet_attrs, ext)
+    print('Loading tweets ...')
+    tweet_df = load_tweets2df(dir_p, tweet_attrs(), ext)
     tweet_df = preproc_tweet_df(tweet_df, tz)
+    print('Loading tweet completed.')
     return tweet_df
-
-
-
