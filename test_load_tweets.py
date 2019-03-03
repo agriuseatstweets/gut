@@ -15,7 +15,7 @@ def tweets():
 
 
 def test_load_tweets(tweets_txt_p, tweets):
-    tweets_ = load_tweets(tweets_txt_p)
+    tweets_ = load_tweets_from_fp(tweets_txt_p)
     for t, tar_t in zip(tweets, tweets_):
         assert t == t
 

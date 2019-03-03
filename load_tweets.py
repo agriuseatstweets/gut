@@ -4,7 +4,7 @@ from tqdm import tqdm
 from utils import *
 
 
-def load_tweets(fp):
+def load_tweets_from_fp(fp):
     with open(fp, 'r') as f:
         tweets = (json.loads(line) for line in f.readlines())
     return tweets
@@ -12,7 +12,7 @@ def load_tweets(fp):
 
 def load_tweets_from_dir(dir_p, ext=None):
     fps = get_abs_fps(dir_p, ext=ext)
-    tweet_files = (load_tweets(fp) for fp in fps)
+    tweet_files = (load_tweets_from_fp(fp) for fp in fps)
     return tweet_files
 
 
@@ -26,7 +26,6 @@ def load_tweets2df(dir_p, attrs, ext=None):
                        e.g. 'id_str' or 'user.screen_name' for nested values
                        or 'user.entities.,screen_name' if last nesting layer is list-like
     :param str ext: extension of files, e.g. '.txt'
-
     :returns pd.DataFrame df: dataframe with extracted attributes
     """
     tweets_files = load_tweets_from_dir(dir_p, ext)
@@ -60,13 +59,30 @@ def tweet_attrs():
     return attrs
 
 
-def timezone():
-    return 'Asia/Kolkata'
-
-
 def preproc_tweet_df(tweet_df, tz):
     '''preprocessing for tweet_dataframe'''
     tweet_df['created_at'] = pd.to_datetime(tweet_df['created_at'], utc=True).dt.tz_convert(tz)
     tweet_df['created_at_D'] = tweet_df['created_at'].dt.floor('D')
     tweet_df = tweet_df.drop(tweet_df[tweet_df['id_str'].isnull()].index)
     return tweet_df
+
+
+def load_tweets(dir_p, tz, ext, tweet_attrs=tweet_attrs()):
+    '''
+    wrapper for tweet loading
+
+    :param str dir_p: directory with tweets
+    :param str tz: timezone from datetime library
+    :param str ext: extension of files, e.g. '.txt'
+    :param tweet_attrs: list of str attributes to be extracted from tweet object
+                       e.g. 'id_str' or 'user.screen_name' for nested values
+                       or 'user.entities.,screen_name' if last nesting layer is list-like
+    :returns pd.DataFrame df: dataframe with extracted attributes
+    '''
+
+    tweet_df = load_tweets2df(dir_p, tweet_attrs, ext)
+    tweet_df = preproc_tweet_df(tweet_df, tz)
+    return tweet_df
+
+
+
