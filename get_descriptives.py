@@ -206,6 +206,7 @@ def get_descriptives(tweet_df, media_outlets, parties, candidates, dir_out_p):
             .groupby('user.screen_name') \
             .sum() \
             .to_csv(dir_out_p + 'interaction_counts_' + user_n + '.csv')
+        del count_concat
 
         # edges weights
         get_edge_weights(tweet_df, user).to_csv(dir_out_p + 'edges_weights_' + user_n + '.csv')
