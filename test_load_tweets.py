@@ -1,5 +1,5 @@
 import pytest
-import pandas as pd
+import pandas as pmd
 from load_tweets import *
 from utils import *
 
