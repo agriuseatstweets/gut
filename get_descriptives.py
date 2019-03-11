@@ -46,6 +46,18 @@ def get_original_tweet_count(tweet_df, user):
     return df_out
 
 
+def tweet_df():
+    tweet_df = pd.DataFrame({
+        'id_str': ['0', '1', '2', '3', '4', '5'],
+        'created_at_D': [1, 2, 1, 1, 1, 1],
+        'user.screen_name': ['a', 'a', 'a', 'b', 'd', 'e'],
+        'in_reply_to_status_id_str': [None, None, None, None, None, None],
+        'retweeted_status.id_str': [None, None, None, None, None, None],
+        'quoted_status.id_str': [None, None, None, None, None, None]
+    })
+    return tweet_df
+
+
 def get_reply_count(tweet_df, user):
     '''
     returns number of replies to tweets by user and day. retrieved by counting
@@ -55,7 +67,6 @@ def get_reply_count(tweet_df, user):
     :param list user: target users
     :returns pd.DataFrame df_out: dataframe with aggregated 'reply_count' by user
     '''
-    #df = df[['id_str', 'user.screen_name', 'in_reply_to_status_id_str', 'in_reply_to_screen_name']]
     print('--- Getting reply count ...')
     df_out = tweet_df\
         .loc[tweet_df['in_reply_to_screen_name'].isin(user)
@@ -101,12 +112,12 @@ def get_mention_count(tweet_df, user):
     res = []
     print('--- Getting mention count ...')
     for u in tqdm(user):
-        df_fil.loc[:, 'mention_count'] = list(isin_listofsets(u, df_fil['entities.user_mentions.,screen_name']))
+        df_fil.loc[:, 'mention_count'] = list(isin_listofsets(u, df_fil['entities.user_mentions.,screen_name'], True))
         df_fil.loc[:, 'user'] = u
         res += [
-            df_fil\
-                .groupby(['user', 'created_at_D'])\
-                .mention_count\
+            df_fil
+                .groupby(['user', 'created_at_D'])
+                .mention_count
                 .sum()
         ]
     df_res = pd.concat(res)
@@ -160,13 +171,87 @@ def get_edge_weights(tweet_df, user):
     return res
 
 
-def assert_concat_integrity(count_dfs, count_concat):
-    for df in count_dfs:
+def get_counts(tweet_df, user):
+    '''
+    wrapper for get_original_tweet_count, get_retweet_count, get_reply_count
+    and get mention count; returns list of outputs from these functions
+
+    :param pd.DataFrame tweet_df: tweet dataframe with tweet attributes as columns
+    :param list user: target users
+    :returns list: list of dataframes with count output
+    '''
+    counts = []
+    counts += [get_original_tweet_count(tweet_df, user)]
+    counts += [get_retweet_count(tweet_df, user)]
+    counts += [get_reply_count(tweet_df, user)]
+    counts += [get_mention_count(tweet_df, user)]
+    return counts
+
+
+def assert_concat(counts, counts_concat):
+    '''
+    tests whether the concatenated counts_concat contains the same values as the
+    list of dfs counts by comparing 10 random values for each df in counts
+    '''
+    assert sum(len(df) for df in counts) > 0
+    for df in counts:
         if len(df) == 0:
             continue
         idxs = np.random.choice(df.index, 10)
         for idx in idxs:
-            assert df.loc[idx] == count_concat.loc[idx, df.columns[0]]
+            assert df.loc[idx] == counts_concat.loc[idx, df.columns[0]]
+
+
+def safe_concat(counts):
+    '''
+    concatenates the list of dfs counts along axis=1 and asserts
+    concat has worked by calling assert_concat
+
+    :param list counts: list of dfs with output from count functions
+    :returns pd.DataFrame: concatenated dataframe
+    '''
+    counts_concat = pd.concat(counts, axis=1)
+    counts_concat.columns = [x.columns[0] for x in counts]
+    assert_concat(counts, counts_concat)
+    return counts_concat
+
+
+def make_ts(tweet_df, user, counts_concat):
+    '''
+    converts the counts_concat into a timeseries by adding days with no observed counts
+
+    :param pd.DataFrame tweet_df: tweet dataframe with tweet attributes as columns
+    :param pd.DataFrame counts_concat: dataframe with counts as columns
+    :returns pd.DataFrame: dataframe with timestamps
+    '''
+    dt_range = pd.date_range(tweet_df['created_at_D'].min(), tweet_df['created_at_D'].max(), freq='D')
+    multiindex = pd.MultiIndex.from_product((user, dt_range), names=['user.screen_name', 'created_at_D'])
+    counts_concat = counts_concat.reindex(multiindex)
+    counts_concat.sort_values('created_at_D', inplace=True)
+    counts_concat.fillna(0, inplace=True)
+    return counts_concat
+
+
+def get_processed_counts(tweet_df, user):
+    '''
+    wrapper to get counts of  counts of original tweets, retweets, replies and mentions
+    and process the output (concatenation, add days with no observed counts)
+    
+    :param pd.DataFrame tweet_df: tweet dataframe with tweet attributes as columns
+    :param list user: target users
+    :returns pd.Dataframe: dataframe with the counts as columns
+    '''
+    counts_concat = get_counts(tweet_df, user)
+    counts_concat = safe_concat(counts_concat)
+    counts_concat = make_ts(tweet_df, user, counts_concat)
+    return counts_concat
+
+
+def agg_by_user(counts_concat):
+    counts_concat_agg = counts_concat\
+        .groupby('user.screen_name') \
+        .sum()
+    return counts_concat_agg
 
 
 def get_descriptives(tweet_df, media_outlets, parties, candidates, dir_out_p):
@@ -194,26 +279,10 @@ def get_descriptives(tweet_df, media_outlets, parties, candidates, dir_out_p):
         get_follower_counts(tweet_df, user).to_csv(dir_out_p + 'follower_counts_' + user_n + '.csv')
 
         # counts of original tweets, retweets, replies and mentions
-        count_dfs = []
-        count_dfs += [get_original_tweet_count(tweet_df, user)]
-        count_dfs += [get_retweet_count(tweet_df, user)]
-        count_dfs += [get_reply_count(tweet_df, user)]
-        count_dfs += [get_mention_count(tweet_df, user)]
-        count_concat = pd.concat(count_dfs, axis=1)
-        count_concat.columns = [x.columns[0] for x in count_dfs]
-        assert_concat_integrity(count_dfs, count_concat)
-        del count_dfs
-        dt_range = pd.date_range(tweet_df['created_at_D'].min(), tweet_df['created_at_D'].max(), freq='D')
-        multiindex = pd.MultiIndex.from_product((user, dt_range), names=['user.screen_name', 'created_at_D'])
-        count_concat = count_concat.reindex(multiindex)
-        count_concat.sort_values('created_at_D', inplace=True)
-        count_concat.fillna(0, inplace=True)
-        count_concat.to_csv(dir_out_p + 'interaction_counts_by_day_' + user_n + '.csv')
-        count_concat \
-            .groupby('user.screen_name') \
-            .sum() \
-            .to_csv(dir_out_p + 'interaction_counts_' + user_n + '.csv')
-        del count_concat
+        counts_concat = get_processed_counts(tweet_df, user)
+        counts_concat.to_csv(dir_out_p + 'interaction_counts_by_day_' + user_n + '.csv')
+        agg_by_user(counts_concat).to_csv(dir_out_p + 'interaction_counts_' + user_n + '.csv')
+        del counts_concat
 
         # edges weights
         get_edge_weights(tweet_df, user).to_csv(dir_out_p + 'edges_weights_' + user_n + '.csv')

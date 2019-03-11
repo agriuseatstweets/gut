@@ -51,54 +51,78 @@ def test_tweet_df_integrity(tweet_df):
     )
 
 
-@pytest.fixture
-def follower_count():
-    return pd.read_pickle('test_data/df2_follower_count.pickle')
+def test_get_follower_counts():
+    tweet_df = pd.DataFrame({
+        'user.screen_name': ['a', 'a', 'b', 'c'],
+        'user.followers_count': [0., 1., 1., 1.],
+        'user.friends_count': [0., 2., 10., 0.],
+        'created_at': [1, 2, 3, 4]
+    })
+    user = ['a', 'b']
+    follower_counts = pd.DataFrame(
+        {
+            'user.screen_name': ['a', 'b'],
+            'user.followers_count': [1.0, 1.0],
+            'user.friends_count': [2.0, 10.0],
+            'created_at': [2, 3]
+        },
+        index=[1, 2]
+    )
+    assert get_follower_counts(tweet_df, user).equals(follower_counts)
 
 
-def test_get_follower_counts(tweet_df, follower_count):
-    user = np.unique(tweet_df['user.screen_name'])[:200]
-    assert get_follower_counts(tweet_df, user).equals(follower_count)
+def test_get_original_tweet_count():
+    tweet_df = pd.DataFrame({
+        'id_str': ['0', '1', '2', '3', '4', '5'],
+        'created_at_D': [1, 2, 1, 1, 1, 1],
+        'user.screen_name': ['a', 'a', 'a', 'b', 'd', 'e'],
+        'in_reply_to_status_id_str': [None, None, None, None, None, None],
+        'retweeted_status.id_str': [None, None, None, None, None, None],
+        'quoted_status.id_str': [None, None, None, None, None, None]
+    })
+    user = ['a', 'b']
+    original_tweet_count = {
+        ('a', 1): 2,
+        ('a', 2): 1,
+        ('b', 1): 1
+    }
+    assert get_original_tweet_count(tweet_df, user).to_dict() == original_tweet_count
 
 
-@pytest.fixture
-def original_tweet_count():
-    return pd.read_pickle('test_data/df2_original_tweet_count.pickle')
+def test_get_reply_count():
+    tweet_df = pd.DataFrame({
+        'id_str': ['0', '1', '2', '3', '4', '5'],
+        'created_at_D': [1, 2, 1, 1, 1, 1],
+        'user.screen_name': ['a', 'a', 'a', 'b', 'd', 'e'],
+        'in_reply_to_status_id_str': ['3', '3', '10', '1', '10', None],
+        'in_reply_to_screen_name': ['b', 'b', 'x', 'a', 'a', None],
+    })
+    user = ['a', 'b']
+    reply_count = {('a', 1): 1, ('b', 1): 1, ('b', 2): 1}
+    assert get_reply_count(tweet_df, user).to_dict() == reply_count
 
 
-def test_get_original_tweet_count(tweet_df, original_tweet_count):
-    user = np.unique(tweet_df['user.screen_name'])
-    assert get_original_tweet_count(tweet_df, user).equals(original_tweet_count)
+def test_get_retweet_count():
+    tweet_df = pd.DataFrame({
+        'id_str': ['0', '1', '2', '3', '4', '5'],
+        'created_at_D': [1, 2, 1, 1, 1, 1],
+        'user.screen_name': ['a', 'a', 'a', 'b', 'd', 'e'],
+        'retweeted_status.id_str': ['3', '3', '10', '1', '10', None],
+        'retweeted_status.user.screen_name': ['b', 'b', 'x', 'a', 'a', None],
+    })
+    user = ['a', 'b']
+    retweet_count = {('a', 1): 1, ('b', 1): 1, ('b', 2): 1}
+    assert get_retweet_count(tweet_df, user).to_dict() == retweet_count
 
 
-@pytest.fixture
-def reply_count():
-    return pd.read_pickle('test_data/df2_reply_count.pickle')
-
-
-def test_get_reply_count(tweet_df, reply_count):
-    user = np.unique(tweet_df['user.screen_name'])
-    assert get_reply_count(tweet_df, user).equals(reply_count)
-
-
-@pytest.fixture
-def retweet_count():
-    return pd.read_pickle('test_data/df2_retweet_count.pickle')
-
-
-def test_get_retweet_count(tweet_df, retweet_count):
-    user = np.unique(tweet_df['user.screen_name'])
-    assert get_retweet_count(tweet_df, user).equals(retweet_count)
-
-
-@pytest.fixture
-def mention_count():
-    return pd.read_pickle('test_data/df2_mention_count.pickle')
-
-
-def test_get_retweet_counts(tweet_df, mention_count):
-    user = np.unique(tweet_df['user.screen_name'])[:50]
-    assert get_mention_count(tweet_df, user).equals(mention_count)
+def test_get_mention_count():
+    tweet_df = pd.DataFrame({
+        'created_at_D': [1, 2, 1, 1],
+        'entities.user_mentions.,screen_name': [{'a', 'a'}, {'a', 'b', 'c'}, {'a'}, {}],
+    })
+    user = ['a', 'b']
+    mention_count = {('a', 1): 2, ('a', 2): 1, ('b', 1): 0, ('b', 2): 1}
+    assert get_mention_count(tweet_df, user).to_dict() == mention_count
 
 
 def test_get_edge_weights():
