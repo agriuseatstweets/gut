@@ -10,28 +10,31 @@ def load_tweets_from_fp(fp):
     return tweets
 
 
-def load_tweets_from_dir(dir_p, ext=None):
-    fps = get_abs_fps(dir_p, ext=ext)
-    tweet_files = (load_tweets_from_fp(fp) for fp in fps)
-    return tweet_files
+def load_tweets_from_fps(fps):
+    return (load_tweets_from_fp(fp) for fp in fps)
 
 
-def load_tweets2df(dir_p, attrs, ext=None):
+#def load_tweets_from_dir(dir_p, ext=None):
+#    fps = get_abs_fps(dir_p, ext=ext)
+#    tweet_files = (load_tweets_from_fp(fp) for fp in fps)
+#    return tweet_files
+
+
+def load_tweets2df(tweet_fps, attrs):
     """
     loads all files with extension ext in directory dir_p
     and extracts attributes into pd.Dataframe
 
-    :param str dir_p: directory with tweets
+    :param list tweet_fps: list of tweet filepaths
     :param list attrs: list of str attributes to be extracted from tweet object
                        e.g. 'id_str' or 'user.screen_name' for nested values
                        or 'user.entities.,screen_name' if last nesting layer is list-like
     :param str ext: extension of files, e.g. '.txt'
     :returns pd.DataFrame df: dataframe with extracted attributes
     """
-    tweets_files = load_tweets_from_dir(dir_p, ext)
-    n_files = len(list(load_tweets_from_dir(dir_p, ext)))
+    tweets_files = load_tweets_from_fps(tweet_fps)
     data = {a: [] for a in attrs}
-    for f in tqdm(tweets_files, total=n_files):
+    for f in tqdm(tweets_files, total=len(tweet_fps)):
         for t in f:
             for a in attrs:
                 keys = a.split('.')

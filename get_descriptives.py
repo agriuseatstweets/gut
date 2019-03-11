@@ -254,37 +254,33 @@ def agg_by_user(counts_concat):
     return counts_concat_agg
 
 
-def get_descriptives(tweet_df, media_outlets, parties, candidates, dir_out_p):
+def get_descriptives(tweet_df, all_user):
     '''
     gets all types of counts from tweet dfs for users in media_outlets, parties
-    and candidates. saves descriptives in csvs to dir_out_p
+    and candidates
 
 
     :param pd.DataFrame tweet_df: dataframe with tweets
-    :param list media_outlets: list of screen_name of media outlets
-    :param list parties: list of screen_name of parties
-    :param candidates: list of screen_name of candidates
-    :param str dir_out_p: directory where to store the descriptives
+    :param dict all_user: keys are names (e.g. candidates) values are list of screen_names
+    :returns
     '''
 
-    if dir_out_p[-1] != '/': dir_out_p += '/'
-    all_user = (media_outlets, parties, candidates)
-    all_user_n = ('media_outlets', 'parties', 'candidates')
+    r = {user_n: {} for user_n in all_user.keys()}
 
-    for i, (user, user_n) in enumerate(zip(all_user, all_user_n)):
+    for i, (user_n, user) in enumerate(all_user.items()):
 
-        print('Getting descriptives for', user_n, str(i+1) + '/' + str(len(all_user_n)))
+        print('Getting descriptives for', user_n, str(i+1) + '/' + str(len(all_user)))
 
         # follower counts
-        get_follower_counts(tweet_df, user).to_csv(dir_out_p + 'follower_counts_' + user_n + '.csv')
+        r[user_n]['follower_counts'] = get_follower_counts(tweet_df, user)
 
         # counts of original tweets, retweets, replies and mentions
-        counts_concat = get_processed_counts(tweet_df, user)
-        counts_concat.to_csv(dir_out_p + 'interaction_counts_by_day_' + user_n + '.csv')
-        agg_by_user(counts_concat).to_csv(dir_out_p + 'interaction_counts_' + user_n + '.csv')
-        del counts_concat
+        r[user_n]['engagement_counts_by_day'] = get_processed_counts(tweet_df, user)
+        r[user_n]['engagement_counts'] = agg_by_user(r[user_n]['engagement_counts_by_day'])
 
         # edges weights
-        get_edge_weights(tweet_df, user).to_csv(dir_out_p + 'edges_weights_' + user_n + '.csv')
+        r[user_n]['edges_weights'] = get_edge_weights(tweet_df, user)
 
     print('Getting descriptives completed.')
+
+    return r

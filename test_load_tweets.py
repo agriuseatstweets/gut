@@ -5,36 +5,45 @@ from utils import *
 
 
 @pytest.fixture
-def tweets_txt_p():
-    return 'test_data/tweets.txt'
-
-
-@pytest.fixture
-def tweets():
+def target_tweets():
     return load_pickle('test_data/tweets.pickle')
 
 
-def test_load_tweets(tweets_txt_p, tweets):
-    tweets_ = load_tweets_from_fp(tweets_txt_p)
-    for t, tar_t in zip(tweets, tweets_):
-        assert t == t
+@pytest.fixture
+def tweet_fp():
+    return 'test_data/tweets.txt'
+
+
+def test_load_tweets_from_fp(target_tweets, tweet_fp):
+    loaded_tweets = load_tweets_from_fp(tweet_fp)
+    for t1, t2 in zip(loaded_tweets, target_tweets):
+        assert t1 == t2
 
 
 @pytest.fixture
-def test_dir_p():
-    return 'test_data'
-
+def test_dir():
+    return 'test_data/'
 
 @pytest.fixture
 def ext():
     return '.txt'
 
 
-def test_load_tweets_from_dir(test_dir_p, ext, tweets):
-    tweets_files = load_tweets_from_dir(test_dir_p, ext)
-    for f in tweets_files:
-        for t, tar_t in zip(f, tweets):
-            assert t == t
+@pytest.fixture
+def tweet_fps(test_dir, ext):
+    return list(get_abs_fps(test_dir, ext))
+
+
+def test_load_tweets_from_fps(target_tweets, tweet_fps):
+    tweet_files = load_tweets_from_fps(tweet_fps)
+    for f in tweet_files:
+        for t1, t2 in zip(f, target_tweets):
+            assert t1 == t2
+
+
+@pytest.fixture
+def target_tweet_df(test_dir):
+    return pd.read_pickle(test_dir + 'df1.pickle')
 
 
 @pytest.fixture
@@ -49,16 +58,13 @@ def attrs():
     return attrs
 
 
-@pytest.fixture
-def target_df():
-    return pd.read_pickle('test_data/df1.pickle')
+def test_load_tweets2df(target_tweet_df, tweet_fps, attrs):
+    loaded_tweet_df = load_tweets2df(tweet_fps, attrs)
+    assert loaded_tweet_df.equals(target_tweet_df)
 
 
-def test_load_tweets2df(test_dir_p, attrs, ext, target_df):
-    df = load_tweets2df(test_dir_p, attrs, ext)
-    assert df.equals(target_df)
 
 
-def test_load_tweets2df_notimplemented_exeption(test_dir_p, ext):
+def test_load_tweets2df_notimplemented_exeption(tweet_fps):
     with pytest.raises(NotImplementedError):
-        df = load_tweets2df(test_dir_p, ['entities,.user_mentions.bla'], ext)
+        df = load_tweets2df(tweet_fps, ['entities,.user_mentions.bla'])
