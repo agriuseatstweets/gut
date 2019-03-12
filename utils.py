@@ -72,3 +72,8 @@ def get_idxs_true(l):
     if isinstance(l, types.GeneratorType):
         l = list(l)
     return list(compress(range(len(l)), l))
+
+
+def chunks(l, n):
+    for i in range(0, len(l), n):
+        yield l[i:i + n]

@@ -1,7 +1,5 @@
 import pytest
-import numpy as np
 import pandas as pd
-from utils import *
 from get_descriptives import *
 
 

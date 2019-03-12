@@ -70,11 +70,11 @@ def preproc_tweet_df(tweet_df, tz):
     return tweet_df
 
 
-def load_tweets(dir_p, tz, ext):
+def load_tweets(tweet_fps, tz):
     '''
     wrapper for tweet loading
 
-    :param str dir_p: directory with tweets
+    :param list tweet_fps: list of tweet filepaths
     :param str tz: timezone from datetime library
     :param str ext: extension of files, e.g. '.txt'
     :param tweet_attrs: list of str attributes to be extracted from tweet object
@@ -82,8 +82,8 @@ def load_tweets(dir_p, tz, ext):
                        or 'user.entities.,screen_name' if last nesting layer is list-like
     :returns pd.DataFrame df: dataframe with extracted attributes
     '''
-    print('Loading tweets ...')
-    tweet_df = load_tweets2df(dir_p, tweet_attrs(), ext)
+    print('   Loading tweets ...')
+    tweet_df = load_tweets2df(tweet_fps, tweet_attrs())
     tweet_df = preproc_tweet_df(tweet_df, tz)
-    print('Loading tweet completed.')
+    print('   Loading tweet completed.')
     return tweet_df

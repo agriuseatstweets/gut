@@ -1,5 +1,4 @@
 import pytest
-import pandas as pmd
 from load_tweets import *
 from utils import *
 
@@ -61,8 +60,6 @@ def attrs():
 def test_load_tweets2df(target_tweet_df, tweet_fps, attrs):
     loaded_tweet_df = load_tweets2df(tweet_fps, attrs)
     assert loaded_tweet_df.equals(target_tweet_df)
-
-
 
 
 def test_load_tweets2df_notimplemented_exeption(tweet_fps):
