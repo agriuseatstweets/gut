@@ -2,7 +2,7 @@
 Processes and analyses tweets
 
 ## structure 
-'main.py' contains all parameters, 'MAIN.sh' is the main script. 
+'main.py' contains all parameters. assumes tokens for accessing the GCS and the Google Sheet are provided via the path specified in 'main.py'
 
 ## descriptives
 descriptives have the following properties: 

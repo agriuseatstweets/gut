@@ -1,11 +1,15 @@
 import numpy as np
 import os
+import pytest
 import gcsfs
 import gspread
 import datetime
 from oauth2client.service_account import ServiceAccountCredentials
 from chunkwise_processing import *
 
+
+# some testing
+pytest.main()
 
 # get user from google spreadsheet
 spreadsheet_token_fp = 'key_inputsheet.json'
@@ -27,7 +31,7 @@ bucket_token_fp = 'key.json'
 bucket = 'agrius-tweethouse-test'
 output_dir = 'descriptives'
 tz = 'Asia/Kolkata'
-chunksize = 100 # number of files in bucket to be processed in one chunk
+chunksize = 100 # number of files from bucket to be processed in one chunk
 
 
 if output_dir[-1] != '!': output_dir += '/'
@@ -39,7 +43,7 @@ if not os.path.exists(output_dir):
 # let the fun begin ...
 fs = gcsfs.GCSFileSystem(project=project, token=bucket_token_fp, access='read_only')
 fps = fs.ls(bucket)
-chunkwise_processing(all_user, fps, tz, output_dir, chunksize=chunksize, fs=fs)
+chunkwise_processing(all_user, fps[:5], tz, output_dir, chunksize=chunksize, fs=fs)
 
 
 
