@@ -39,7 +39,7 @@ if not os.path.exists(output_dir):
 # let the fun begin ...
 fs = gcsfs.GCSFileSystem(project=project, token=bucket_token_fp, access='read_only')
 fps = fs.ls(bucket)
-chunkwise_processing(all_user, fps[:100], tz, output_dir, chunksize=chunksize, fs=fs)
+chunkwise_processing(all_user, fps, tz, output_dir, chunksize=chunksize, fs=fs)
 
 
 
