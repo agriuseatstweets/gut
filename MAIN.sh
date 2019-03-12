@@ -1,0 +1,2 @@
+pytest
+python main.py

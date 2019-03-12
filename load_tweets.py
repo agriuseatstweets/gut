@@ -4,23 +4,21 @@ from tqdm import tqdm
 from utils import *
 
 
-def load_tweets_from_fp(fp):
-    with open(fp, 'r') as f:
-        tweets = (json.loads(line) for line in f.readlines())
+def load_tweets_from_fp(fp, fs=None):
+    if fs:
+        with fs.open(fp, 'r') as f:
+            tweets = (json.loads(line) for line in f.readlines())
+    else:
+        with open(fp, 'r') as f:
+            tweets = (json.loads(line) for line in f.readlines())
     return tweets
 
 
-def load_tweets_from_fps(fps):
-    return (load_tweets_from_fp(fp) for fp in fps)
+def load_tweets_from_fps(fps, fs=None):
+    return (load_tweets_from_fp(fp, fs) for fp in fps)
 
 
-#def load_tweets_from_dir(dir_p, ext=None):
-#    fps = get_abs_fps(dir_p, ext=ext)
-#    tweet_files = (load_tweets_from_fp(fp) for fp in fps)
-#    return tweet_files
-
-
-def load_tweets2df(tweet_fps, attrs):
+def load_tweets2df(tweet_fps, attrs, fs=None):
     """
     loads all files with extension ext in directory dir_p
     and extracts attributes into pd.Dataframe
@@ -30,9 +28,10 @@ def load_tweets2df(tweet_fps, attrs):
                        e.g. 'id_str' or 'user.screen_name' for nested values
                        or 'user.entities.,screen_name' if last nesting layer is list-like
     :param str ext: extension of files, e.g. '.txt'
+    :param gcsfs.GCSFileSystem fs: access to google cloud storeage
     :returns pd.DataFrame df: dataframe with extracted attributes
     """
-    tweets_files = load_tweets_from_fps(tweet_fps)
+    tweets_files = load_tweets_from_fps(tweet_fps, fs)
     data = {a: [] for a in attrs}
     for f in tqdm(tweets_files, total=len(tweet_fps)):
         for t in f:
@@ -70,7 +69,7 @@ def preproc_tweet_df(tweet_df, tz):
     return tweet_df
 
 
-def load_tweets(tweet_fps, tz):
+def load_tweets(tweet_fps, tz, fs=None):
     '''
     wrapper for tweet loading
 
@@ -80,10 +79,11 @@ def load_tweets(tweet_fps, tz):
     :param tweet_attrs: list of str attributes to be extracted from tweet object
                        e.g. 'id_str' or 'user.screen_name' for nested values
                        or 'user.entities.,screen_name' if last nesting layer is list-like
+    :param gcsfs.GCSFileSystem fs: access to google cloud storeage
     :returns pd.DataFrame df: dataframe with extracted attributes
     '''
-    print('   Loading tweets ...')
-    tweet_df = load_tweets2df(tweet_fps, tweet_attrs())
+    print('... Loading tweets ...')
+    tweet_df = load_tweets2df(tweet_fps, tweet_attrs(), fs)
     tweet_df = preproc_tweet_df(tweet_df, tz)
-    print('   Loading tweet completed.')
+    print('... Loading tweet completed.')
     return tweet_df

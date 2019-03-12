@@ -77,3 +77,7 @@ def get_idxs_true(l):
 def chunks(l, n):
     for i in range(0, len(l), n):
         yield l[i:i + n]
+
+
+def strip_list(l):
+    return [x.strip() for x in l]
