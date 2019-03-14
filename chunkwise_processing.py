@@ -65,25 +65,32 @@ def concat_all_descriptives(chu_descr):
     return concat
 
 
-def dump2csv(concat, dir_p, tz):
+def dump2csv(concat, dir_p, tz, fs=None):
     if dir_p[-1] != '/': dir_p += '/'
     for user_n, v in concat.items():
         for descr_n, descr in v.items():
             if descr_n == 'engagement_counts_by_day':
                 descr[['user.screen_name', 'day_tz=' + tz]] = pd.DataFrame(descr.index.to_list(), index=descr.index)
                 descr['day_tz=' + tz] = descr['day_tz=' + tz].astype(str).str[:10]
-                descr.to_csv(dir_p + descr_n + '_' + user_n + '.csv',
-                             columns=[
+                descr = descr[[
                                  'user.screen_name',
                                  'day_tz=' + tz,
                                  'original_tweet_count',
                                  'retweet_count',
                                  'reply_count',
                                  'mention_count'
-                             ],
-                             index=False)
+                             ]]
+            elif descr_n == 'engagement_counts':
+                descr.reset_index(inplace=True)
+            elif descr_n == 'edges_weights':
+                descr[['user1', 'user2']] = pd.DataFrame(descr.index.to_list(), index=descr.index)
+            pt = dir_p + descr_n + '_' + user_n + '.csv'
+            if fs:
+                with fs.open(pt, 'w') as f:
+                    descr.to_csv(f, index=False)
+                fs.du(pt)
             else:
-                descr.to_csv(dir_p + descr_n + '_' + user_n + '.csv')
+                descr.to_csv(pt, index=False)
 
 
 def chunkwise_processing(all_user, tweet_fps, tz, dir_p, chunksize=100, fs=None):
@@ -99,5 +106,5 @@ def chunkwise_processing(all_user, tweet_fps, tz, dir_p, chunksize=100, fs=None)
 
     res = get_descriptives_chunkwise(all_user, tweet_fps, tz, chunksize=chunksize, fs=fs)
     res = concat_all_descriptives(res)
-    dump2csv(res, dir_p, tz)
+    dump2csv(res, dir_p, tz, fs)
     print('Chunkwise processing completed.')

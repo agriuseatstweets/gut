@@ -8,44 +8,47 @@ from oauth2client.service_account import ServiceAccountCredentials
 from chunkwise_processing import *
 
 
-# some testing
-pytest.main()
+# get environment variables
+GOOGLE_APPLICATION_CREDENTIALS = os.getenv('GOOGLE_APPLICATION_CREDENTIALS', '/usr/share/keys/key.json')
+GOOGLE_PROJECT_ID = os.getenv('GOOGLE_PROJECT_ID', 'toixotoixo')
+BELLY_LOCATION = os.getenv('BELLY_LOCATION', 'agrius-tweethouse')
+OUTPUT_LOCATION = os.getenv('OUTPUT_LOCATION', 'agrius-outputs')
+SPREADSHEET_NAME = os.getenv('SPREADSHEET_NAME', 'Agrius_search_criteria')
 
-# get user from google spreadsheet
-spreadsheet_token_fp = 'key_inputsheet.json'
-spreadsheet_name = 'Agrius_search_criteria'
 
+#GOOGLE_APPLICATION_CREDENTIALS = 'key.json'
+#GOOGLE_APPLICATION_CREDENTIALS = 'keys/key.json'
 
+# read in user groups from spreadsheet
 scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-creds = ServiceAccountCredentials.from_json_keyfile_name(spreadsheet_token_fp, scope)
+creds = ServiceAccountCredentials.from_json_keyfile_name(GOOGLE_APPLICATION_CREDENTIALS, scope)
 client = gspread.authorize(creds)
-sheet = client.open(spreadsheet_name).sheet1
-all_user = {
-    'media_outlets': strip_list(np.unique(sheet.col_values(1)[1:])),
-    'parties': strip_list(np.unique(sheet.col_values(2)[1:]))
-}
+sheet = client.open(SPREADSHEET_NAME).sheet1
+user_groups = pd.DataFrame({
+    'screen_name': strip_list(sheet.col_values(2)[1:]),
+    'user_group': strip_list(sheet.col_values(3)[1:])
+})\
+    .groupby('user_group')['screen_name']\
+    .apply(list).to_dict()
 
-# access tweet bucket
-project = 'toixotoixo'
-bucket_token_fp = 'key.json'
-bucket = 'agrius-tweethouse-test'
-output_dir = 'descriptives'
-tz = 'Asia/Kolkata'
-chunksize = 100 # number of files from bucket to be processed in one chunk
+# shorten for testing
+user_groups['media_outlet'] = user_groups['media_outlet'][:20]
+user_groups['party'] = user_groups['party'][:20]
 
+#GOOGLE_APPLICATION_CREDENTIALS = 'keys/key.json'
 
-if output_dir[-1] != '!': output_dir += '/'
-now = datetime.datetime.now()
-output_dir += '/' + str(now.year) + str(now.month) + str(now.day) + '_' + str(now.hour) + str(now.minute)
-if not os.path.exists(output_dir):
-    os.makedirs(output_dir)
+# access GCS
+fs = gcsfs.GCSFileSystem(project=GOOGLE_PROJECT_ID, token=GOOGLE_APPLICATION_CREDENTIALS, access='read_write')
+fps = fs.ls(BELLY_LOCATION)
+
+# shorten for testing
+#fps = fps[:5]
+
 
 # let the fun begin ...
-fs = gcsfs.GCSFileSystem(project=project, token=bucket_token_fp, access='read_only')
-fps = fs.ls(bucket)
-chunkwise_processing(all_user, fps[:5], tz, output_dir, chunksize=chunksize, fs=fs)
-
-
-
-#fps = list(get_abs_fps('sample_data', '.txt'))
-#chunkwise_processing(all_user, fps, tz, output_dir, chunksize=chunksize)
+tz = 'Asia/Kolkata'
+chunksize = 100 # number of files from bucket to be processed in one chunk
+now = datetime.datetime.now()
+timestamp = '-'.join(str(x) for x in getattrs(now, ['year', 'month', 'day', 'hour', 'minute']))
+output_pt = 'gs://' + OUTPUT_LOCATION + '/' + timestamp + '/'
+chunkwise_processing(user_groups, fps, tz, output_pt, chunksize=chunksize, fs=fs)

@@ -81,3 +81,7 @@ def chunks(l, n):
 
 def strip_list(l):
     return [x.strip() for x in l]
+
+
+def getattrs(object, attrs):
+    return (getattr(object, x) for x in attrs)
