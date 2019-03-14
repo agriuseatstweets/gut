@@ -16,9 +16,6 @@ OUTPUT_LOCATION = os.getenv('OUTPUT_LOCATION', 'agrius-outputs')
 SPREADSHEET_NAME = os.getenv('SPREADSHEET_NAME', 'Agrius_search_criteria')
 
 
-#GOOGLE_APPLICATION_CREDENTIALS = 'key.json'
-#GOOGLE_APPLICATION_CREDENTIALS = 'keys/key.json'
-
 # read in user groups from spreadsheet
 scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
 creds = ServiceAccountCredentials.from_json_keyfile_name(GOOGLE_APPLICATION_CREDENTIALS, scope)
@@ -31,19 +28,16 @@ user_groups = pd.DataFrame({
     .groupby('user_group')['screen_name']\
     .apply(list).to_dict()
 
-# shorten for testing
-user_groups['media_outlet'] = user_groups['media_outlet'][:20]
-user_groups['party'] = user_groups['party'][:20]
-
-#GOOGLE_APPLICATION_CREDENTIALS = 'keys/key.json'
 
 # access GCS
 fs = gcsfs.GCSFileSystem(project=GOOGLE_PROJECT_ID, token=GOOGLE_APPLICATION_CREDENTIALS, access='read_write')
 fps = fs.ls(BELLY_LOCATION)
 
-# shorten for testing
-#fps = fps[:5]
 
+# shoten for testing
+#user_groups['media_outlet'] = user_groups['media_outlet'][:20]
+#user_groups['party'] = user_groups['party'][:20]
+#fps = fps[:50]
 
 # let the fun begin ...
 tz = 'Asia/Kolkata'

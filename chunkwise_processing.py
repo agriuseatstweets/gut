@@ -83,6 +83,7 @@ def dump2csv(concat, dir_p, tz, fs=None):
             elif descr_n == 'engagement_counts':
                 descr.reset_index(inplace=True)
             elif descr_n == 'edges_weights':
+                cols = list(descr.columns)
                 descr[['user1', 'user2']] = pd.DataFrame(descr.index.to_list(), index=descr.index)
             pt = dir_p + descr_n + '_' + user_n + '.csv'
             if fs:
