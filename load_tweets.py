@@ -2,23 +2,35 @@ import json
 import pandas as pd
 from tqdm import tqdm
 from utils import *
-
+from datetime import datetime, date
+import pytz
 
 def load_tweets_from_fp(fp, fs=None):
-    if fs:
-        with fs.open(fp, 'r') as f:
-            tweets = (json.loads(line) for line in f.readlines())
-    else:
-        with open(fp, 'r') as f:
-            tweets = (json.loads(line) for line in f.readlines())
+    opener = fs.open if fs else open
+    with opener(fp, 'r') as f:
+        tweets = (json.loads(line) for line in f.readlines())
     return tweets
 
 
 def load_tweets_from_fps(fps, fs=None):
-    return (load_tweets_from_fp(fp, fs) for fp in fps)
+    return (t for fp in fps for t in load_tweets_from_fp(fp, fs))
 
+def get_tweet_attrs(t, attrs):
+    data = {}
+    for a in attrs:
+        keys = a.split('.')
+        if ',' in ''.join(keys):
+            if ',' in keys[-1]:
+                _, key_emb = keys[-1].split(',')
+                vs = safe_get(t, *keys[:-1])
+                data[a] = list({x[key_emb] for x in vs}) if vs else [{}]
+            else:
+                raise NotImplementedError('Only implemented for comma on final nesting level.')
+        else:
+            data[a] = safe_get(t, *keys)
+    return data
 
-def load_tweets2df(tweet_fps, attrs, fs=None):
+def load_tweet_attrs(tweet_fps, attrs, fs=None):
     """
     loads all files with extension ext in directory dir_p
     and extracts attributes into pd.Dataframe
@@ -31,23 +43,8 @@ def load_tweets2df(tweet_fps, attrs, fs=None):
     :param gcsfs.GCSFileSystem fs: access to google cloud storeage
     :returns pd.DataFrame df: dataframe with extracted attributes
     """
-    tweets_files = load_tweets_from_fps(tweet_fps, fs)
-    data = {a: [] for a in attrs}
-    for f in tqdm(tweets_files, total=len(tweet_fps)):
-        for t in f:
-            for a in attrs:
-                keys = a.split('.')
-                if ',' in ''.join(keys):
-                    if ',' in keys[-1]:
-                        _, key_emb = keys[-1].split(',')
-                        vs = safe_get(t, *keys[:-1])
-                        data[a] += [{x[key_emb] for x in vs}] if vs else [{}]
-                    else:
-                        raise NotImplementedError('Only implemented for comma on final nesting level.')
-                else:
-                    data[a] += [safe_get(t, *keys)]
-    df = pd.DataFrame(data)
-    return df
+    tweets = load_tweets_from_fps(tweet_fps, fs)
+    return (get_tweet_attrs(t, attrs) for t in tweets)
 
 
 def tweet_attrs():
@@ -61,12 +58,13 @@ def tweet_attrs():
     return attrs
 
 
-def preproc_tweet_df(tweet_df, tz):
+
+def set_timezone(tweet, tz):
     '''preprocessing for tweet_dataframe'''
-    tweet_df['created_at'] = pd.to_datetime(tweet_df['created_at'], utc=True).dt.tz_convert(tz)
-    tweet_df['created_at_D'] = tweet_df['created_at'].dt.floor('D')
-    tweet_df = tweet_df.drop(tweet_df[tweet_df['id_str'].isnull()].index)
-    return tweet_df
+
+    d = datetime.strptime(tweet['created_at'], '%a %b %d %H:%M:%S +0000 %Y')
+    tweet['created_at'] = d.astimezone(pytz.timezone(tz))
+    return tweet
 
 
 def load_tweets(tweet_fps, tz, fs=None):
@@ -82,8 +80,7 @@ def load_tweets(tweet_fps, tz, fs=None):
     :param gcsfs.GCSFileSystem fs: access to google cloud storeage
     :returns pd.DataFrame df: dataframe with extracted attributes
     '''
-    print('... Loading tweets ...')
-    tweet_df = load_tweets2df(tweet_fps, tweet_attrs(), fs)
-    tweet_df = preproc_tweet_df(tweet_df, tz)
-    print('... Loading tweet completed.')
-    return tweet_df
+
+    tweets = load_tweets_from_fps(tweet_fps, fs)
+    tweets = (get_tweet_attrs(t, tweet_attrs()) for t in tweets)
+    return (set_timzeone(t, tz) for t in tweets)

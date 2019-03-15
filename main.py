@@ -28,7 +28,6 @@ user_groups = pd.DataFrame({
     .groupby('user_group')['screen_name']\
     .apply(list).to_dict()
 
-
 # access GCS
 fs = gcsfs.GCSFileSystem(project=GOOGLE_PROJECT_ID, token=GOOGLE_APPLICATION_CREDENTIALS, access='read_write')
 fps = fs.ls(BELLY_LOCATION)
@@ -45,4 +44,13 @@ chunksize = 100 # number of files from bucket to be processed in one chunk
 now = datetime.datetime.now()
 timestamp = '-'.join(str(x) for x in getattrs(now, ['year', 'month', 'day', 'hour', 'minute']))
 output_pt = 'gs://' + OUTPUT_LOCATION + '/' + timestamp + '/'
-chunkwise_processing(user_groups, fps, tz, output_pt, chunksize=chunksize, fs=fs)
+# chunkwise_processing(user_groups, fps, tz, output_pt, chunksize=chunksize, fs=fs)
+
+
+# def print_df(fs, infi, tz, outfi, users, tweets, fn):
+#     tweets = load_tweets(infi, tz, fs)
+#     df = flatten_counts_to_df(fn(users, tweets), 'date', 'user')
+#     with fs.open(outfi, 'w') as f:
+#         df.to_csv(f, index=False)
+
+print(fps, output_pt)

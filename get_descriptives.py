@@ -2,128 +2,87 @@ import pandas as pd
 import numpy as np
 from tqdm import tqdm
 from utils import *
+from functools import reduce
+from toolz import curry
 
+def flatten_counts_to_df(di, l1, l2):
+    return pd.DataFrame([{l1: v1, l2: v2, 'count': count}
+                         for v1, values in di.items()
+                         for v2, count in values.items()])
 
-def get_follower_counts(tweet_df, user):
-    '''
-    aggregates 'friends_count' and 'followers_count' for all users in user using the
-    most recent observation according to 'created_at'
+def retweet_count(users, tweets):
+    picker = lambda t: t.get('retweeted_status.user.screen_name')
+    return _count_per_user(users, picker, tweets)
 
-    :param pd.DataFrame tweet_df: tweet dataframe with tweet attributes as columns
-    :param list user: target users
-    :returns pd.DataFrame df: dataframe with aggregated 'followers_count', 'friends_count'
-                              and 'created_at'
-    '''
-    df_out = tweet_df[['user.screen_name', 'user.followers_count', 'user.friends_count', 'created_at']]
-    df_out = df_out.loc[df_out['user.screen_name'].isin(user)]
-    df_out = df_out.loc[df_out.groupby('user.screen_name').created_at.idxmax()]
-    df_out = df_out.sort_values('user.followers_count', ascending=False)
-    return df_out
+def reply_count(users, tweets):
+    picker = lambda t: t.get('in_reply_to_screen_name')
+    return _count_per_user(users, picker, tweets)
 
+def mention_count(users, tweets):
+    picker = lambda t: t.get('entities.user_mentions.,screen_name')
+    return _count_per_user(users, picker, tweets)
 
-def get_original_tweet_count(tweet_df, user):
-    '''
-    counts original tweets (tweet is both no retweet, reply and quoted_tweet) made
-    by user and day
+def _count_per_user(users, picker, tweets):
+    reducer = _reduce_picker(users, picker)
+    return reduce(_per_day(reducer), tweets, {})
 
-    :param pd.DataFrame tweet_df: tweet dataframe with tweet attributes as columns
-    :param list user: target users
-    :returns pd.DataFrame df_out: dataframe with 'original_tweet_count' by user
-    '''
-    print('...... Getting original tweet count ...')
-    df_out = tweet_df[['id_str', 'created_at_D', 'user.screen_name', 'in_reply_to_status_id_str',
-                       'retweeted_status.id_str', 'quoted_status.id_str']]
-    df_out = df_out.loc[df_out['user.screen_name'].isin(user)]
-    df_out = df_out\
-        [df_out['in_reply_to_status_id_str'].isnull()
-         & df_out['retweeted_status.id_str'].isnull()
-         & df_out['quoted_status.id_str'].isnull()] \
-        .groupby(['user.screen_name', 'created_at_D']) \
-        .id_str \
-        .nunique()
-    df_out.columns = ['original_tweet_count']
-    df_out.index.names = ['user.screen_name', 'created_at_D']
-    return df_out
+@curry
+def _reduce_picker(users, picker, acc, t):
+    val = picker(t)
+    if not val:
+        return acc
+    return _update_count(users, acc, val)
 
+@curry
+def _per_day(fn, acc, t):
+    """ fn is a reducer """
+    key = t.get('created_at').date().strftime('%a %b %d')
+    acc[key] = fn(acc.get(key, {}), t)
+    return acc
 
-def tweet_df():
-    tweet_df = pd.DataFrame({
-        'id_str': ['0', '1', '2', '3', '4', '5'],
-        'created_at_D': [1, 2, 1, 1, 1, 1],
-        'user.screen_name': ['a', 'a', 'a', 'b', 'd', 'e'],
-        'in_reply_to_status_id_str': [None, None, None, None, None, None],
-        'retweeted_status.id_str': [None, None, None, None, None, None],
-        'quoted_status.id_str': [None, None, None, None, None, None]
-    })
-    return tweet_df
+@curry
+def _update_count(users, counts, vals):
+    if type(vals) is not list:
+        vals = [vals]
 
+    vals = [v for v in vals if v in users]
 
-def get_reply_count(tweet_df, user):
-    '''
-    returns number of replies to tweets by user and day. retrieved by counting
-    reply tweets in tweet_df
+    for val in vals:
+        try:
+            counts[val] += 1
+        except KeyError:
+            counts[val] = 1
 
-    :param pd.DataFrame tweet_df: tweet dataframe with tweet attributes as columns
-    :param list user: target users
-    :returns pd.DataFrame df_out: dataframe with aggregated 'reply_count' by user
-    '''
-    print('...... Getting reply count ...')
-    df_out = tweet_df\
-        .loc[tweet_df['in_reply_to_screen_name'].isin(user)
-             & tweet_df['in_reply_to_status_id_str'].isin(tweet_df['id_str'])] \
-        .groupby(['in_reply_to_screen_name', 'created_at_D']) \
-        .id_str \
-        .nunique()
-    df_out.columns = ['reply_count']
-    df_out.index.names = ['user.screen_name', 'created_at_D']
-    return df_out
+    return counts
 
+def original_count(users, tweets):
+    tweets = (t for t in tweets if t.get('user.screen_name') in users)
+    names = (t.get('user.screen_name') for t in tweets if _is_original(t))
+    return reduce(_update_count(users), names, {})
 
-def get_retweet_count(tweet_df, user):
-    '''
-    returns sum of retweet_counts over tweets by user and day retrieved by counting retweets in the dataset
+def _is_original(t):
+    keys = ['in_reply_to_status_id_str',
+            'retweeted_status.id_str',
+            'quoted_status.id_str']
 
-    :param pd.DataFrame tweet_df: tweet dataframe with tweet attributes as columns
-    :param list user: target users
-    :returns pd.DataFrame df_out: dataframe with 'retweeted_count_from_embedded_objects' and 'retweeted_count_counted'
-                                  by user
-    '''
-    print('...... Getting retweet count ...')
-    df_out = tweet_df\
-        .loc[tweet_df['retweeted_status.user.screen_name'].isin(user)
-             & tweet_df['retweeted_status.id_str'].isin(tweet_df['id_str'])] \
-        .groupby(['retweeted_status.user.screen_name', 'created_at_D']) \
-        .id_str \
-        .nunique()
-    df_out.columns = ['retweet_count']
-    df_out.index.names = ['user.screen_name', 'created_at_D']
-    return df_out
+    return not [t.get(k) for k in keys if t.get(k)]
 
+def follower_count(users, tweets):
+    tweets = (t for t in tweets if t.get('user.screen_name') in users)
+    keys = ['user.followers_count', 'user.friends_count']
+    return reduce(_followers(keys), tweets, {})
 
-def get_mention_count(tweet_df, user):
-    '''
-    counts how many times user gets mentioned in tweets contained in tweet_df
+@curry
+def _followers(keys, acc, t):
+    for k in keys:
+        user = t['user.screen_name']
+        try:
+            acc[user][k] = max(t[k], acc[user][k])
+        except:
+            acc[user] = {k:0 for k in keys}
+            acc[user][k] = t[k]
+    return acc
 
-    :param pd.DataFrame tweet_df: tweet dataframe with tweet attributes as columns
-    :param list user: target users
-    :returns pd.DataFrame df_out: dataframe with 'mention_count' by user
-    '''
-    df_fil = tweet_df[['entities.user_mentions.,screen_name', 'created_at_D']].copy()
-    res = []
-    print('...... Getting mention count ...')
-    for u in tqdm(user):
-        df_fil.loc[:, 'mention_count'] = list(isin_listofsets(u, df_fil['entities.user_mentions.,screen_name'], True))
-        df_fil.loc[:, 'user'] = u
-        res += [
-            df_fil
-                .groupby(['user', 'created_at_D'])
-                .mention_count
-                .sum()
-        ]
-    df_res = pd.concat(res)
-    df_res.columns = ['mention_count']
-    df_res.index.names = ['user.screen_name', 'created_at_D']
-    return df_res
 
 
 def get_edge_weights(tweet_df, user):
@@ -237,7 +196,7 @@ def get_processed_counts(tweet_df, user):
     '''
     wrapper to get counts of  counts of original tweets, retweets, replies and mentions
     and process the output (concatenation, add days with no observed counts)
-    
+
     :param pd.DataFrame tweet_df: tweet dataframe with tweet attributes as columns
     :param list user: target users
     :returns pd.Dataframe: dataframe with the counts as columns
