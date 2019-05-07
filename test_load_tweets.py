@@ -55,7 +55,6 @@ def attrs():
     )
     return attrs
 
-
 def test_get_tweet_attrs(target_tweet_df, tweet_fps, attrs):
     tweets = list(load_tweets_from_fps(tweet_fps))
     targets = target_tweet_df.to_dict(orient='records')
@@ -76,3 +75,10 @@ def test_set_timezone(tweet_fps):
 def test_load_tweets_attrs_notimplemented_exeption(tweet_fps):
     with pytest.raises(NotImplementedError):
         list(load_tweet_attrs(tweet_fps, ['entities,.user_mentions.bla']))
+
+def test_filter_repeats():
+    tweets = [{'id_str': 'foo'}, {'id_str': 'bar'}, {'id_str': 'baz'}, {'id_str': 'foo'}]
+    tweets = filter_repeats(tweets)
+    tweets = list(tweets)
+    assert(len(tweets) == 3)
+    assert(tweets == [{'id_str': 'foo'}, {'id_str': 'bar'}, {'id_str': 'baz'}])

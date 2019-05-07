@@ -8,7 +8,8 @@ import pytz
 def load_tweets_from_fp(fp, fs=None):
     opener = fs.open if fs else open
     with opener(fp, 'r') as f:
-        tweets = (json.loads(line) for line in f.readlines())
+        tweets = [json.loads(line) for line in f.readlines()]
+
     return tweets
 
 
@@ -61,11 +62,29 @@ def tweet_attrs():
 
 def set_timezone(tweet, tz):
     '''preprocessing for tweet_dataframe'''
-
     d = datetime.strptime(tweet['created_at'], '%a %b %d %H:%M:%S +0000 %Y')
     tweet['created_at'] = d.astimezone(pytz.timezone(tz))
     return tweet
 
+def filter_tweets(tweets):
+    """ Removes limit tweets and includes only real tweets"""
+    return (t for t in tweets if t.get('created_at'))
+
+
+def filter_repeats(tweets):
+
+    # move to disk if this blows up
+    seen_ids = set()
+
+    for tweet in tweets:
+        if tweet['id_str'] not in seen_ids:
+            seen_ids.add(tweet['id_str'])
+            yield tweet
+
+
+# TODO: is this necessary? Some way to filter out non-useful tweets?
+def filter_nonsense(hashtags, users, tweets):
+    pass
 
 def load_tweets(tweet_fps, tz, fs=None):
     '''
@@ -83,4 +102,6 @@ def load_tweets(tweet_fps, tz, fs=None):
 
     tweets = load_tweets_from_fps(tweet_fps, fs)
     tweets = (get_tweet_attrs(t, tweet_attrs()) for t in tweets)
-    return (set_timzeone(t, tz) for t in tweets)
+    tweets = filter_tweets(tweets)
+    tweets = filter_repeats(tweets)
+    return (set_timezone(t, tz) for t in tweets)
