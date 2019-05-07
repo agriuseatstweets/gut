@@ -5,6 +5,7 @@ import gcsfs
 import gspread
 from datetime import datetime
 from oauth2client.service_account import ServiceAccountCredentials
+from utils import strip_list
 from load_tweets import *
 from get_descriptives import *
 from os.path import join
@@ -43,8 +44,7 @@ def all_users(user_groups):
     return [x for y in list(user_groups.values()) for x in y]
 
 def make_filename(metric, group):
-    now = datetime.now()
-    timestamp = '-'.join(str(x) for x in getattrs(now, ['year', 'month', 'day', 'hour', 'minute']))
+    timestamp = datetime.now().strftime('%Y-%m-%d-%H-%m')
     outfi = 'gs://' + join(OUTPUT_LOCATION, metric, group, timestamp)
     return outfi
 

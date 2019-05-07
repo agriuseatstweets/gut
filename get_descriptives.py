@@ -1,14 +1,12 @@
 import pandas as pd
 import numpy as np
 from tqdm import tqdm
-from utils import *
 from functools import reduce
 from toolz import curry
 from itertools import combinations
 from copy import deepcopy
 from itertools import combinations, permutations
 
-import zlib
 
 def flatten_counts_to_df(di, l1, l2):
     return pd.DataFrame([{l1: v1, l2: v2, 'count': count}
@@ -109,18 +107,6 @@ def _followers(keys, acc, t):
             acc[user]['created_at'] = t['created_at']
     return acc
 
-
-
-def lookup_user_ht(id_range, user):
-    return zlib.adler32(user.encode('utf8')) % id_range
-
-def lookup_user(count, lookup, user):
-    idx = lookup.get(user)
-    if idx is None:
-        lookup[user] = count
-        idx = count
-        count += 1
-    return count, lookup, idx
 
 def get_mentions(orgs, t):
     keys = ['in_reply_to_screen_name',

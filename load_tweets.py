@@ -1,7 +1,7 @@
 import json
 import pandas as pd
 from tqdm import tqdm
-from utils import *
+from utils import safe_get
 from datetime import datetime, date
 import pytz
 
@@ -72,7 +72,6 @@ def filter_tweets(tweets):
 
 
 def filter_repeats(tweets):
-
     # move to disk if this blows up
     seen_ids = set()
 
@@ -92,11 +91,8 @@ def load_tweets(tweet_fps, tz, fs=None):
 
     :param list tweet_fps: list of tweet filepaths
     :param str tz: timezone from datetime library
-    :param str ext: extension of files, e.g. '.txt'
-    :param tweet_attrs: list of str attributes to be extracted from tweet object
-                       e.g. 'id_str' or 'user.screen_name' for nested values
-                       or 'user.entities.,screen_name' if last nesting layer is list-like
     :param gcsfs.GCSFileSystem fs: access to google cloud storeage
+
     :returns pd.DataFrame df: dataframe with extracted attributes
     '''
 
