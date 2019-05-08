@@ -109,13 +109,6 @@ def test_follower_count():
             'bar': {'created_at': datetime(2019,5,1), 'user.followers_count': 1, 'user.friends_count': 1} }
     assert(counts == ans)
 
-def test_lookup_user():
-    assert(lookup_user(0, {}, 'foo') == (1, {'foo': 0}, 0))
-    assert(lookup_user(1, {'foo': 0}, 'foo') == (1, {'foo': 0}, 0))
-    assert(lookup_user(1, {'foo': 0}, 'bar') == (2, {'foo': 0, 'bar': 1}, 1))
-    assert(lookup_user(2, {'foo': 0, 'bar': 1}, 'bar') == (2, {'foo': 0, 'bar': 1}, 1))
-
-
 def test_get_mentions():
     tweet = {'created_at': datetime(2019,5,1), 'user.screen_name': 'foo', 'in_reply_to_screen_name': 'baz', 'entities.user_mentions.,screen_name': ['bar']}
 

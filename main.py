@@ -1,4 +1,3 @@
-import numpy as np
 import os
 import pytest
 import gcsfs
@@ -9,6 +8,15 @@ from utils import strip_list
 from load_tweets import *
 from get_descriptives import *
 from os.path import join
+import logging
+
+logging.basicConfig(level = logging.INFO)
+
+def get_user(screen_name):
+    try:
+        return api.get_user(screen_name=screen_name)
+    except:
+        return None
 
 # get environment variables
 GOOGLE_APPLICATION_CREDENTIALS = os.getenv('GOOGLE_APPLICATION_CREDENTIALS', '/usr/share/keys/key.json')
@@ -44,13 +52,13 @@ def all_users(user_groups):
     return [x for y in list(user_groups.values()) for x in y]
 
 def make_filename(metric, group):
-    timestamp = datetime.now().strftime('%Y-%m-%d-%H-%m')
+    timestamp = datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
     outfi = 'gs://' + join(OUTPUT_LOCATION, metric, group, timestamp)
     return outfi
 
 def process(metric, group, limit=None):
     fs = gcsfs.GCSFileSystem(project=GOOGLE_PROJECT_ID, token=GOOGLE_APPLICATION_CREDENTIALS, access='read_write')
-    fps = fs.ls(BELLY_LOCATION)
+    fps = sorted(fs.ls(BELLY_LOCATION))
 
     if limit:
         fps = fps[:int(limit)]
@@ -62,6 +70,8 @@ def process(metric, group, limit=None):
         users = user_groups[group]
     else:
         users = all_users(user_groups)
+
+    logging.info(f'Processing {len(fps)} files and {len(users)} users with metric: {metric}')
 
     tweets = load_tweets(fps, tz, fs)
     fn = metrics[metric]

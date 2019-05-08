@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-from tqdm import tqdm
 from functools import reduce
 from toolz import curry
 from itertools import combinations

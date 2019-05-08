@@ -14,7 +14,7 @@ spec:
         image: nandanrao/agrius-gut:latest
         resources:
           requests:
-            memory: "1024Mi"
+            memory: "2048Mi"
         args:
         - python
         - main.py
