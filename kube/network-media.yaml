@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: agrius-gut-network-media
+  name: agrius-gut-network-media-quick3
 spec:
   completions: 1
   parallelism: 1
@@ -10,7 +10,7 @@ spec:
     spec:
       restartPolicy: OnFailure
       containers:
-      - name: agrius-gut-network-media
+      - name: agrius-gut-network-media-quick3
         image: nandanrao/agrius-gut:latest
         resources:
           requests:
@@ -20,6 +20,7 @@ spec:
         - main.py
         - network
         - media_outlet
+        - "11800"
         env:
           - name: GOOGLE_APPLICATION_CREDENTIALS
             value: "/usr/share/keys/key.json"

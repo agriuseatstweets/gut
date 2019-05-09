@@ -3,17 +3,23 @@ import numpy as np
 from functools import reduce
 from toolz import curry
 from itertools import combinations
+from datetime import datetime
 from copy import deepcopy
 from itertools import combinations, permutations
-
+from concurrent.futures import ThreadPoolExecutor
 
 def flatten_counts_to_df(di, l1, l2):
     return pd.DataFrame([{l1: v1, l2: v2, 'count': count}
                          for v1, values in di.items()
                          for v2, count in values.items()])
 
-@curry
-def get_engagement(by_date, users, tweets):
+def get_engagement(path, fs):
+    with fs.open(path) as f:
+        df = pd.read_csv(f)
+        return df.groupby(['user.screen_name'], as_index=False).sum()
+
+
+def get_engagement_by_day(users, tweets):
     c = all_counts(users, tweets)
 
     keys = ['original_tweet_count', 'retweet_count', 'reply_count', 'mention_count']
@@ -23,11 +29,7 @@ def get_engagement(by_date, users, tweets):
     df = pd.concat(cdfs).set_index(['user.screen_name', 'date', 'metric']).unstack(fill_value=0)
     df.columns = df.columns.get_level_values(1)
     df = df.reset_index()
-
-    if by_date:
-        return df
-    else:
-        return df.groupby(['user.screen_name'], as_index=False).sum()
+    return df
 
 
 def all_counts(users, tweets):
@@ -84,27 +86,40 @@ def _freq(counts, val):
         counts[val] = 1
     return counts
 
-def get_follower_count(users, tweets):
-    tweets = (t for t in tweets if t.get('user.screen_name') in users)
-    keys = ['user.followers_count', 'user.friends_count']
-    return reduce(_followers(keys), tweets, {})
+import tweepy
+from os import getenv
 
-def follower_count(users, tweets):
-    c = get_follower_count(users, tweets)
-    return pd.DataFrame(c).T.reset_index().rename(columns = {'index': 'user.screen_name'})
 
 @curry
-def _followers(keys, acc, t):
-    for k in keys:
-        user = t['user.screen_name']
-        try:
-            acc[user][k] = max(t[k], acc[user][k])
-            acc[user]['created_at'] = max(acc[user]['created_at'], t['created_at'])
-        except:
-            acc[user] = {k:0 for k in keys}
-            acc[user][k] = t[k]
-            acc[user]['created_at'] = t['created_at']
-    return acc
+def get_user(api, screen_name):
+    try:
+        return api.get_user(screen_name=screen_name)
+    except:
+        return None
+
+
+def tweepy_api():
+    auth = tweepy.OAuthHandler(getenv('T_CONSUMER_TOKEN'), getenv('T_CONSUMER_SECRET'))
+    auth.set_access_token(getenv('T_ACCESS_TOKEN'), getenv('T_TOKEN_SECRET'))
+    return tweepy.API(auth)
+
+def follower_count(user_groups):
+    api = tweepy_api()
+    date = datetime.now().isoformat()
+    users = [[(k,i) for i in items] for k,items in user_groups.items()]
+    users = [y for x in  users for y in x]
+
+    with ThreadPoolExecutor() as pool:
+        user_info = pool.map(get_user(api), list(zip(*users))[1])
+
+    user_info = [(u,ui) for u,ui in zip(users, user_info) if ui is not None]
+    user_info =  [{'user.screen_name': u[1],
+                   # 'user.group': u[0],
+                   'user.followers_count': ui.followers_count,
+                   'user.friends_count': ui.friends_count}
+                  for u,ui in user_info]
+
+    return pd.DataFrame([{**ui, 'created_at': date} for ui in user_info])
 
 
 def get_mentions(orgs, t):

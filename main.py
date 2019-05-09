@@ -12,12 +12,6 @@ import logging
 
 logging.basicConfig(level = logging.INFO)
 
-def get_user(screen_name):
-    try:
-        return api.get_user(screen_name=screen_name)
-    except:
-        return None
-
 # get environment variables
 GOOGLE_APPLICATION_CREDENTIALS = os.getenv('GOOGLE_APPLICATION_CREDENTIALS', '/usr/share/keys/key.json')
 GOOGLE_PROJECT_ID = os.getenv('GOOGLE_PROJECT_ID', 'toixotoixo')
@@ -42,10 +36,8 @@ def get_user_groups():
     return user_groups
 
 metrics = {
-    'engagement-counts': get_engagement(False),
-    'engagement-counts-by-day': get_engagement(True),
+    'engagement-counts-by-day': get_engagement_by_day,
     'network': count_edges,
-    'follower-counts': follower_count
 }
 
 def all_users(user_groups):
@@ -73,9 +65,19 @@ def process(metric, group, limit=None):
 
     logging.info(f'Processing {len(fps)} files and {len(users)} users with metric: {metric}')
 
-    tweets = load_tweets(fps, tz, fs)
-    fn = metrics[metric]
-    df = fn(users, tweets)
+    if metric == 'follower-counts':
+        df = follower_count(user_groups)
+
+    elif metric == 'engagement-counts':
+        path = sorted(fs.ls(join(OUTPUT_LOCATION, 'engagement-counts-by-day')))[-1]
+        df = get_engagement(path, fs)
+
+    else:
+        tweets = load_tweets(fps, tz, fs)
+        fn = metrics[metric]
+        df = fn(users, tweets)
+
+    # join groups?
 
     with fs.open(make_filename(metric, group), 'w') as f:
         df.to_csv(f, index=False)
