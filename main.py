@@ -2,6 +2,7 @@ import os
 import pytest
 import gcsfs
 import gspread
+import datetime as dt
 from datetime import datetime
 from oauth2client.service_account import ServiceAccountCredentials
 from utils import strip_list
@@ -14,10 +15,9 @@ logging.basicConfig(level = logging.INFO)
 
 # get environment variables
 GOOGLE_APPLICATION_CREDENTIALS = os.getenv('GOOGLE_APPLICATION_CREDENTIALS', '/usr/share/keys/key.json')
-GOOGLE_PROJECT_ID = os.getenv('GOOGLE_PROJECT_ID', 'toixotoixo')
-BELLY_LOCATION = os.getenv('BELLY_LOCATION', 'agrius-tweethouse')
 OUTPUT_LOCATION = os.getenv('GUT_LOCATION', 'agrius-outputs')
 SPREADSHEET_NAME = os.getenv('SPREADSHEET_NAME', 'Agrius_search_criteria')
+GOOGLE_PROJECT_ID = os.getenv('GOOGLE_PROJECT_ID', 'toixotoixo')
 
 # read in user groups from spreadsheet
 def get_user_groups():
@@ -52,12 +52,8 @@ def write_df(fs, fi, df):
     with fs.open(fi, 'w') as f:
         df.to_csv(f, index=False)
 
-def process(metric, group, limit=None):
+def process(metric, group):
     fs = gcsfs.GCSFileSystem(project=GOOGLE_PROJECT_ID, token=GOOGLE_APPLICATION_CREDENTIALS, access='read_write')
-    fps = sorted(fs.ls(BELLY_LOCATION))
-
-    if limit:
-        fps = fps[-int(limit):]
 
     tz = 'Asia/Kolkata'
 
@@ -68,15 +64,13 @@ def process(metric, group, limit=None):
     else:
         users = all_users(user_groups)
 
-    logging.info(f'Processing {len(fps)} files and {len(users)} users with metric: {metric}')
-
     if metric == 'follower-counts':
         df = follower_count(user_groups)
     else:
-        tweets = load_tweets(fps, tz, fs)
+        db = RedisDB(os.getenv('REDIS_HOST'), int(os.getenv('REDIS_PORT')))
+        tweets = db.get_tweets(tz)
         fn = metrics[metric]
         df = fn(users, tweets)
-
 
     if metric == 'engagement-counts':
         write_df(fs, make_filename('engagement-counts-by-day', group), df)
@@ -88,6 +82,5 @@ def process(metric, group, limit=None):
 
 
 from clize import run
-
 if __name__ == '__main__':
     run(process)

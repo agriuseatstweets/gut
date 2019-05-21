@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: agrius-gut-engagement-counts-4
+  name: agrius-gut-load-tweets
 spec:
   completions: 1
   parallelism: 1
@@ -10,17 +10,16 @@ spec:
     spec:
       restartPolicy: OnFailure
       containers:
-      - name: agrius-gut-engagement-counts
+      - name: agrius-gut-load-tweets
         image: nandanrao/agrius-gut:0.4
         resources:
           requests:
             cpu: 1000m
-            memory: "8192Mi"
+            memory: "2048Mi"
         args:
         - python
-        - main.py
-        - engagement-counts
-        - ""
+        - load_tweets.py
+        - "6000"
         env:
           - name: GOOGLE_APPLICATION_CREDENTIALS
             value: "/usr/share/keys/key.json"
@@ -36,6 +35,8 @@ spec:
             value: "Agrius_search_criteria"
           - name: GUT_END_DATE
             value: "2019-5-20"
+          - name: GUT_CHUNK_SIZE
+            value: "500"
           - name: REDIS_HOST
             value: "ardb.default.svc.cluster.local"
           - name: REDIS_PORT

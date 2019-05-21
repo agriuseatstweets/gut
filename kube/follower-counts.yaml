@@ -21,6 +21,9 @@ spec:
         - main.py
         - follower-counts
         - ""
+        envFrom:
+        - secretRef:
+            name: agrius-gut-envs
         env:
           - name: GOOGLE_APPLICATION_CREDENTIALS
             value: "/usr/share/keys/key.json"
@@ -34,6 +37,8 @@ spec:
             value: "agrius-outputs"
           - name: SPREADSHEET_NAME
             value: "Agrius_search_criteria"
+          - name: GUT_END_DATE
+            value: "2019-5-20"
         volumeMounts:
           - name: keys
             mountPath: /usr/share/keys
