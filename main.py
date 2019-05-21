@@ -36,7 +36,7 @@ def get_user_groups():
     return user_groups
 
 metrics = {
-    'engagement-counts-by-day': get_engagement_by_day,
+    'engagement-counts': get_engagement_by_day,
     'network': count_edges,
 }
 
@@ -48,16 +48,21 @@ def make_filename(metric, group):
     outfi = 'gs://' + join(OUTPUT_LOCATION, metric, group, timestamp)
     return outfi
 
+def write_df(fs, fi, df):
+    with fs.open(fi, 'w') as f:
+        df.to_csv(f, index=False)
+
 def process(metric, group, limit=None):
     fs = gcsfs.GCSFileSystem(project=GOOGLE_PROJECT_ID, token=GOOGLE_APPLICATION_CREDENTIALS, access='read_write')
     fps = sorted(fs.ls(BELLY_LOCATION))
 
     if limit:
-        fps = fps[:int(limit)]
+        fps = fps[-int(limit):]
 
     tz = 'Asia/Kolkata'
 
     user_groups = get_user_groups()
+
     if metric == 'network':
         users = user_groups[group]
     else:
@@ -67,20 +72,20 @@ def process(metric, group, limit=None):
 
     if metric == 'follower-counts':
         df = follower_count(user_groups)
-
-    elif metric == 'engagement-counts':
-        path = sorted(fs.ls(join(OUTPUT_LOCATION, 'engagement-counts-by-day')))[-1]
-        df = get_engagement(path, fs)
-
     else:
         tweets = load_tweets(fps, tz, fs)
         fn = metrics[metric]
         df = fn(users, tweets)
 
-    # join groups?
 
-    with fs.open(make_filename(metric, group), 'w') as f:
-        df.to_csv(f, index=False)
+    if metric == 'engagement-counts':
+        write_df(fs, make_filename('engagement-counts-by-day', group), df)
+
+        write_df(fs, make_filename('engagement-counts', group),
+                 df.groupby(['user.screen_name'], as_index=False).sum())
+    else:
+        write_df(fs, make_filename(metric, group), df)
+
 
 from clize import run
 

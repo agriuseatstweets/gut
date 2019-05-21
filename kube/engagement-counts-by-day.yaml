@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: agrius-gut-engagement-counts-by-day
+  name: agrius-gut-engagement-counts
 spec:
   completions: 1
   parallelism: 1
@@ -10,15 +10,16 @@ spec:
     spec:
       restartPolicy: OnFailure
       containers:
-      - name: agrius-gut-engagement-counts-by-day
+      - name: agrius-gut-engagement-counts
         image: nandanrao/agrius-gut:latest
         resources:
           requests:
-            memory: "2048Mi"
+            cpu: 800m
+            memory: "8192Mi"
         args:
         - python
         - main.py
-        - engagement-counts-by-day
+        - engagement-counts
         - ""
         env:
           - name: GOOGLE_APPLICATION_CREDENTIALS

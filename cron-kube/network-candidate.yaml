@@ -1,0 +1,47 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: agrius-gut-network-candidate
+spec:
+  schedule: "0 1 20 5 ?"
+  jobTemplate:
+    spec:
+      completions: 1
+      parallelism: 1
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: agrius-gut-network-candidate
+            image: nandanrao/agrius-gut:latest
+            resources:
+              requests:
+                cpu: 1000m
+                memory: "8192Mi"
+            args:
+            - python
+            - main.py
+            - network
+            - political_candidate
+            env:
+              - name: GOOGLE_APPLICATION_CREDENTIALS
+                value: "/usr/share/keys/key.json"
+              - name: GOOGLE_PROJECT_ID
+                value: "toixotoixo"
+              - name: GOOGLE_PUBSUB_SUBSCRIPTION
+                value: "agrius-test-belly"
+              - name: BELLY_LOCATION
+                value: "agrius-tweethouse"
+              - name: GUT_LOCATION
+                value: "agrius-outputs"
+              - name: SPREADSHEET_NAME
+                value: "Agrius_search_criteria"
+            volumeMounts:
+              - name: keys
+                mountPath: /usr/share/keys
+                readOnly: true
+          volumes:
+            - name: keys
+              secret:
+                secretName: agrius-gut-keys

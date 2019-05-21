@@ -14,13 +14,13 @@ spec:
         image: nandanrao/agrius-gut:latest
         resources:
           requests:
-            memory: "2048Mi"
+            cpu: 800m
+            memory: "8192Mi"
         args:
         - python
         - main.py
         - network
         - media_outlet
-        - "11800"
         env:
           - name: GOOGLE_APPLICATION_CREDENTIALS
             value: "/usr/share/keys/key.json"
