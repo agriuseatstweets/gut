@@ -3,7 +3,7 @@ kind: CronJob
 metadata:
   name: agrius-gut-network-media
 spec:
-  schedule: "0 1 20 5 ?"
+  schedule: "0 18 27 5 ?"
   jobTemplate:
     spec:
       completions: 1
@@ -14,11 +14,11 @@ spec:
           restartPolicy: OnFailure
           containers:
           - name: agrius-gut-network-media
-            image: nandanrao/agrius-gut:latest
+            image: nandanrao/agrius-gut:0.4
             resources:
               requests:
                 cpu: 1000m
-                memory: "8192Mi"
+                memory: "4096Mi"
             args:
             - python
             - main.py
@@ -37,6 +37,10 @@ spec:
                 value: "agrius-outputs"
               - name: SPREADSHEET_NAME
                 value: "Agrius_search_criteria"
+              - name: REDIS_HOST
+                value: "ardb.default.svc.cluster.local"
+              - name: REDIS_PORT
+                value: "16379"
             volumeMounts:
               - name: keys
                 mountPath: /usr/share/keys

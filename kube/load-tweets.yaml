@@ -14,12 +14,11 @@ spec:
         image: nandanrao/agrius-gut:0.4
         resources:
           requests:
-            cpu: 1000m
+            cpu: 2500m
             memory: "2048Mi"
         args:
         - python
         - load_tweets.py
-        - "6000"
         env:
           - name: GOOGLE_APPLICATION_CREDENTIALS
             value: "/usr/share/keys/key.json"
@@ -34,14 +33,13 @@ spec:
           - name: SPREADSHEET_NAME
             value: "Agrius_search_criteria"
           - name: GUT_END_DATE
-            value: "2019-5-20"
+            value: "2019-5-25"
           - name: GUT_CHUNK_SIZE
             value: "500"
           - name: REDIS_HOST
             value: "ardb.default.svc.cluster.local"
           - name: REDIS_PORT
             value: "16379"
-
         volumeMounts:
           - name: keys
             mountPath: /usr/share/keys

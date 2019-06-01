@@ -40,7 +40,6 @@ spec:
             value: "ardb.default.svc.cluster.local"
           - name: REDIS_PORT
             value: "16379"
-
         volumeMounts:
           - name: keys
             mountPath: /usr/share/keys

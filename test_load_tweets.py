@@ -38,30 +38,36 @@ def attrs():
     )
     return attrs
 
+
+@pytest.fixture(autouse=True)
+def with_envs(monkeypatch):
+    def patch_os(attr):
+        d = {'GUT_START_DATE': '2017-8-21',
+             'GUT_END_DATE': '2017-8-22'}
+        return d[attr]
+
+    monkeypatch.setattr(os, 'getenv',  patch_os)
+
+import time
+
+class FS():
+    def open(self, *args):
+        return open(*args)
+
 def test_get_tweet_attrs(target_tweet_df, tweet_fps, attrs):
-    tweets = list(load_tweets_from_fps(tweet_fps))
+    tweets = list(load_tweets_from_fps(FS(), tweet_fps))
     targets = target_tweet_df.to_dict(orient='records')
     for t,targ in zip(tweets, targets):
         a = get_tweet_attrs(t, attrs)
         assert(a['id_str'] == targ['id_str'])
 
-import time
-
 def test_set_timezone(tweet_fps):
-    tweets = list(load_tweets_from_fps(tweet_fps))
+    tweets = list(load_tweets_from_fps(FS(), tweet_fps))
     tweets = [get_tweet_attrs(t, ['created_at']) for t in tweets]
     t = tweets[0].copy()
     out = set_timezone(tweets[0], 'Asia/Kolkata')
     assert(out['created_at'].strftime('%a %b %d %H:%M') == 'Mon Aug 21 03:30')
 
-
-def test_load_tweets_attrs_notimplemented_exeption(tweet_fps):
-    with pytest.raises(NotImplementedError):
-        list(load_tweet_attrs(tweet_fps, ['entities,.user_mentions.bla']))
-
-def test_filter_repeats():
-    tweets = [{'id_str': 'foo'}, {'id_str': 'bar'}, {'id_str': 'baz'}, {'id_str': 'foo'}]
-    tweets = filter_repeats(tweets)
-    tweets = list(tweets)
-    assert(len(tweets) == 3)
-    assert(tweets == [{'id_str': 'foo'}, {'id_str': 'bar'}, {'id_str': 'baz'}])
+def test_load_tweets_filters_from_dates(tweet_fps):
+    tweets = get_tweets(tweet_fps, FS(), 'Asia/Kolkata')
+    assert(len(list(tweets)) == 1)

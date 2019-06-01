@@ -22,7 +22,7 @@ def get_engagement(path, fs):
 def get_engagement_by_day(users, tweets):
     c = all_counts(users, tweets)
 
-    keys = ['original_tweet_count', 'retweet_count', 'reply_count', 'mention_count']
+    keys = ['original_tweet_count', 'retweet_count', 'reply_count', 'mention_count', 'quoted_count']
 
     cdfs = [flatten_counts_to_df(d, 'date', 'user.screen_name').assign(metric = k)
             for k,d in zip(keys, c)]
@@ -36,7 +36,9 @@ def all_counts(users, tweets):
     pickers = [lambda t: t.get('user.screen_name') if _is_original(t) else None,
                lambda t: t.get('retweeted_status.user.screen_name'),
                lambda t: t.get('in_reply_to_screen_name'),
-               lambda t: t.get('entities.user_mentions.,screen_name')]
+               lambda t: t.get('entities.user_mentions.,screen_name'),
+               lambda t: t.get('quoted_status.user.screen_name'),
+    ]
 
     reducers = [_per_day(_reduce_picker(users, picker)) for picker in pickers]
     inits = [{} for _ in pickers]
@@ -96,7 +98,6 @@ def get_user(api, screen_name):
         return api.get_user(screen_name=screen_name)
     except:
         return None
-
 
 def tweepy_api():
     auth = tweepy.OAuthHandler(getenv('T_CONSUMER_TOKEN'), getenv('T_CONSUMER_SECRET'))

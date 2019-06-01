@@ -97,18 +97,6 @@ def test_original_count_gathers_by_day():
     assert(counts == ans)
 
 
-def test_follower_count():
-    tweets = [
-        {'created_at': datetime(2019,5,1), 'user.screen_name': 'foo', 'user.followers_count': 2, 'user.friends_count': 3},
-        {'created_at': datetime(2019,5,1), 'user.screen_name': 'bar', 'user.followers_count': 1, 'user.friends_count': 1},
-        {'created_at': datetime(2019,5,2), 'user.screen_name': 'foo', 'user.followers_count': 5, 'user.friends_count': 5},
-    ]
-
-    counts = get_follower_count(['foo', 'bar'], tweets)
-    ans = { 'foo': {'created_at': datetime(2019,5,2), 'user.followers_count': 5, 'user.friends_count': 5},
-            'bar': {'created_at': datetime(2019,5,1), 'user.followers_count': 1, 'user.friends_count': 1} }
-    assert(counts == ans)
-
 def test_get_mentions():
     tweet = {'created_at': datetime(2019,5,1), 'user.screen_name': 'foo', 'in_reply_to_screen_name': 'baz', 'entities.user_mentions.,screen_name': ['bar']}
 

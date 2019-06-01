@@ -1,14 +1,13 @@
 import os
 import pytest
 import gcsfs
-import gspread
 import datetime as dt
 from datetime import datetime
-from oauth2client.service_account import ServiceAccountCredentials
 from utils import strip_list
 from load_tweets import *
 from get_descriptives import *
 from os.path import join
+from sheets import get_user_groups
 import logging
 
 logging.basicConfig(level = logging.INFO)
@@ -16,24 +15,8 @@ logging.basicConfig(level = logging.INFO)
 # get environment variables
 GOOGLE_APPLICATION_CREDENTIALS = os.getenv('GOOGLE_APPLICATION_CREDENTIALS', '/usr/share/keys/key.json')
 OUTPUT_LOCATION = os.getenv('GUT_LOCATION', 'agrius-outputs')
-SPREADSHEET_NAME = os.getenv('SPREADSHEET_NAME', 'Agrius_search_criteria')
 GOOGLE_PROJECT_ID = os.getenv('GOOGLE_PROJECT_ID', 'toixotoixo')
 
-# read in user groups from spreadsheet
-def get_user_groups():
-    scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-    creds = ServiceAccountCredentials.from_json_keyfile_name(GOOGLE_APPLICATION_CREDENTIALS, scope)
-    client = gspread.authorize(creds)
-    sheet = client.open(SPREADSHEET_NAME).sheet1
-
-    user_groups = pd.DataFrame({
-        'screen_name': strip_list(sheet.col_values(2)[1:]),
-        'user_group': strip_list(sheet.col_values(4)[1:])
-    })\
-                    .groupby('user_group')['screen_name']\
-                    .apply(list).to_dict()
-
-    return user_groups
 
 metrics = {
     'engagement-counts': get_engagement_by_day,
@@ -63,6 +46,8 @@ def process(metric, group):
         users = user_groups[group]
     else:
         users = all_users(user_groups)
+
+    # if group == 'media'
 
     if metric == 'follower-counts':
         df = follower_count(user_groups)
