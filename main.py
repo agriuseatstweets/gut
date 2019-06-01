@@ -1,22 +1,20 @@
 import os
-import pytest
 import gcsfs
-import datetime as dt
 from datetime import datetime
 from utils import strip_list
-from load_tweets import *
-from get_descriptives import *
+from descriptives.get_descriptives import *
 from os.path import join
-from sheets import get_user_groups
+from sheets.sheets import get_user_groups, _sheets_client
+from db import RedisDB
 import logging
 
 logging.basicConfig(level = logging.INFO)
 
-# get environment variables
-GOOGLE_APPLICATION_CREDENTIALS = os.getenv('GOOGLE_APPLICATION_CREDENTIALS', '/usr/share/keys/key.json')
-OUTPUT_LOCATION = os.getenv('GUT_LOCATION', 'agrius-outputs')
-GOOGLE_PROJECT_ID = os.getenv('GOOGLE_PROJECT_ID', 'toixotoixo')
-
+GOOGLE_APPLICATION_CREDENTIALS = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+OUTPUT_LOCATION = os.getenv('GUT_LOCATION')
+GOOGLE_PROJECT_ID = os.getenv('GOOGLE_PROJECT_ID')
+REDIS_HOST = os.getenv('REDIS_HOST')
+REDIS_PORT = int(os.getenv('REDIS_PORT'))
 
 metrics = {
     'engagement-counts': get_engagement_by_day,
@@ -36,23 +34,23 @@ def write_df(fs, fi, df):
         df.to_csv(f, index=False)
 
 def process(metric, group):
-    fs = gcsfs.GCSFileSystem(project=GOOGLE_PROJECT_ID, token=GOOGLE_APPLICATION_CREDENTIALS, access='read_write')
+    fs = gcsfs.GCSFileSystem(project=GOOGLE_PROJECT_ID,
+                             token=GOOGLE_APPLICATION_CREDENTIALS,
+                             access='read_write')
 
     tz = 'Asia/Kolkata'
 
-    user_groups = get_user_groups()
+    user_groups = get_user_groups(_sheets_client())
 
     if metric == 'network':
         users = user_groups[group]
     else:
         users = all_users(user_groups)
 
-    # if group == 'media'
-
     if metric == 'follower-counts':
         df = follower_count(user_groups)
     else:
-        db = RedisDB(os.getenv('REDIS_HOST'), int(os.getenv('REDIS_PORT')))
+        db = RedisDB(REDIS_HOST, REDIS_PORT)
         tweets = db.get_tweets(tz)
         fn = metrics[metric]
         df = fn(users, tweets)

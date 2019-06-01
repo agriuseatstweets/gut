@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: agrius-gut-engagement-counts-4
+  name: agrius-gut-engagement-counts
 spec:
   completions: 1
   parallelism: 1
@@ -11,7 +11,7 @@ spec:
       restartPolicy: OnFailure
       containers:
       - name: agrius-gut-engagement-counts
-        image: nandanrao/agrius-gut:0.4
+        image: nandanrao/agrius-gut:0.5
         resources:
           requests:
             cpu: 1000m
@@ -32,10 +32,8 @@ spec:
             value: "agrius-tweethouse"
           - name: GUT_LOCATION
             value: "agrius-outputs"
-          - name: SPREADSHEET_NAME
-            value: "Agrius_search_criteria"
-          - name: GUT_END_DATE
-            value: "2019-5-20"
+          - name: GUT_SHEET_ID
+            value: "1LzH7sHJX6WnFTpTIeSsNV1J_ep61SpugZY_SVQoSDjg"
           - name: REDIS_HOST
             value: "ardb.default.svc.cluster.local"
           - name: REDIS_PORT

@@ -4,24 +4,6 @@ from datetime import datetime
 import pytz
 import logging
 
-# from kafka import KafkaProducer, KafkaConsumer
-
-# class KafkaDB(DB):
-#     def __init__(self, servers):
-#         self.servers = servers
-
-#     def load(self, tweets):
-#         producer = KafkaProducer(bootstrap_servers=self.servers)
-#         for t in tweets:
-#             producer.send('tweets', orjson.dumps(t))
-
-
-#     def get_tweets(self):
-#         consumer = KafkaConsumer('tweets', bootstrap_servers=self.servers, consumer_timeout_ms=500)
-#         for msg in consumer:
-#             yield orjson.loads(msg.value)
-
-
 class DB():
     def __init__(self):
         pass
@@ -42,7 +24,10 @@ class RedisDB(DB):
             if i % 10000 == 0:
                 logging.info(f'Tweet: {i}')
             d = orjson.loads(self.client.get(k))
-            d['created_at'] = (datetime
-                               .fromisoformat(d['created_at'])
-                               .replace(tzinfo = pytz.timezone(tz)))
+
+            # some hoops to get same offset as other localized times
+            created = (datetime.fromisoformat(d['created_at']).
+                       replace(tzinfo = None))
+            d['created_at'] = pytz.timezone(tz).localize(created)
+
             yield d
