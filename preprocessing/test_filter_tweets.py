@@ -13,7 +13,7 @@ def test_user_relevant():
 
 def test_text_relevant():
     tweet = {
-        'collected_text': 'mymodiman is the man'
+        'collected_text': 'myMoDiman is the man'
     }
     assert(text_relevant(tweet, ['modi', 'foo']))
     assert(not user_relevant(tweet, ['bar', 'foo']))
