@@ -26,6 +26,5 @@ def _get_terms(sheets):
 
 def only_tweets_of_interest(tweets, sheets):
     users, terms = _get_users(sheets), _get_terms(sheets)
-    print(users)
     is_relevant = lambda t: text_relevant(t, terms) or user_relevant(t, users)
     return (t for t in tweets if is_relevant(t))
