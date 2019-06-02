@@ -1,4 +1,5 @@
 import os
+from itertools import takewhile, islice, count
 
 def get_abs_fps(dir_p, ext=None):
     '''returns absolute paths for all files with extension ext
@@ -18,3 +19,7 @@ def safe_get(dct, *keys):
 
 def strip_list(l):
     return [x.strip() for x in l]
+
+def chunk(n, it):
+    src = iter(it)
+    return takewhile(bool, (list(islice(src, n)) for _ in count(0)))

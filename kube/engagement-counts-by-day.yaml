@@ -1,24 +1,25 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: agrius-gut-engagement-counts-by-day
+  name: agrius-gut-engagement-counts
 spec:
   completions: 1
   parallelism: 1
-  backoffLimit: 2
+  backoffLimit: 4
   template:
     spec:
       restartPolicy: OnFailure
       containers:
-      - name: agrius-gut-engagement-counts-by-day
-        image: nandanrao/agrius-gut:latest
+      - name: agrius-gut-engagement-counts
+        image: nandanrao/agrius-gut:0.5
         resources:
           requests:
-            memory: "2048Mi"
+            cpu: 1000m
+            memory: "8192Mi"
         args:
         - python
         - main.py
-        - engagement-counts-by-day
+        - engagement-counts
         - ""
         env:
           - name: GOOGLE_APPLICATION_CREDENTIALS
@@ -31,8 +32,12 @@ spec:
             value: "agrius-tweethouse"
           - name: GUT_LOCATION
             value: "agrius-outputs"
-          - name: SPREADSHEET_NAME
-            value: "Agrius_search_criteria"
+          - name: GUT_SHEET_ID
+            value: "1LzH7sHJX6WnFTpTIeSsNV1J_ep61SpugZY_SVQoSDjg"
+          - name: REDIS_HOST
+            value: "ardb.default.svc.cluster.local"
+          - name: REDIS_PORT
+            value: "16379"
         volumeMounts:
           - name: keys
             mountPath: /usr/share/keys

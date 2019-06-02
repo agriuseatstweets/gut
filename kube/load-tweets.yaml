@@ -1,0 +1,52 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: agrius-gut-load-tweets
+spec:
+  completions: 1
+  parallelism: 1
+  backoffLimit: 4
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: agrius-gut-load-tweets
+        image: nandanrao/agrius-gut:0.6
+        resources:
+          requests:
+            cpu: 2500m
+            memory: "2048Mi"
+        args:
+        - python
+        - load_tweets.py
+        env:
+          - name: GOOGLE_APPLICATION_CREDENTIALS
+            value: "/usr/share/keys/key.json"
+          - name: GOOGLE_PROJECT_ID
+            value: "toixotoixo"
+          - name: GOOGLE_PUBSUB_SUBSCRIPTION
+            value: "agrius-test-belly"
+          - name: GUT_SHEET_ID
+            value: "1LzH7sHJX6WnFTpTIeSsNV1J_ep61SpugZY_SVQoSDjg"
+          - name: BELLY_LOCATION
+            value: "agrius-tweethouse"
+          - name: GUT_LOCATION
+            value: "agrius-outputs"
+          - name: GUT_START_DATE
+            value: "2019-4-11"
+          - name: GUT_END_DATE
+            value: "2019-5-25"
+          - name: GUT_CHUNK_SIZE
+            value: "500"
+          - name: REDIS_HOST
+            value: "ardb.default.svc.cluster.local"
+          - name: REDIS_PORT
+            value: "16379"
+        volumeMounts:
+          - name: keys
+            mountPath: /usr/share/keys
+            readOnly: true
+      volumes:
+        - name: keys
+          secret:
+            secretName: agrius-gut-keys

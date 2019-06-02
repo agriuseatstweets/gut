@@ -1,0 +1,51 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: agrius-gut-network-candidate
+spec:
+  schedule: "20 9 2 6 ?"
+  jobTemplate:
+    spec:
+      completions: 1
+      parallelism: 1
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: agrius-gut-network-candidate
+            image: nandanrao/agrius-gut:0.6
+            resources:
+              requests:
+                cpu: 1000m
+                memory: "4096Mi"
+            args:
+            - python
+            - main.py
+            - network
+            - political_candidate
+            env:
+              - name: GOOGLE_APPLICATION_CREDENTIALS
+                value: "/usr/share/keys/key.json"
+              - name: GOOGLE_PROJECT_ID
+                value: "toixotoixo"
+              - name: GOOGLE_PUBSUB_SUBSCRIPTION
+                value: "agrius-test-belly"
+              - name: BELLY_LOCATION
+                value: "agrius-tweethouse"
+              - name: GUT_LOCATION
+                value: "agrius-outputs"
+              - name: GUT_SHEET_ID
+                value: "1LzH7sHJX6WnFTpTIeSsNV1J_ep61SpugZY_SVQoSDjg"
+              - name: REDIS_HOST
+                value: "ardb.default.svc.cluster.local"
+              - name: REDIS_PORT
+                value: "16379"
+            volumeMounts:
+              - name: keys
+                mountPath: /usr/share/keys
+                readOnly: true
+          volumes:
+            - name: keys
+              secret:
+                secretName: agrius-gut-keys

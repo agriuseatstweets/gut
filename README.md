@@ -1,18 +1,25 @@
 # gut
 Processes and analyses tweets
 
-## structure 
-'main.py' contains all parameters. assumes tokens for accessing the GCS and the Google Sheet are provided via the path specified in 'main.py'
+## Preprocessing and Loading
 
-## descriptives
-descriptives have the following properties: 
-- followers_count: 
-    - user.followers_count: denotes the number of followers of user.screen_name at time created_at
-    - user.friends_count: denotes the number of friends of user.screen_name at time created_at, that is the number of users the user is following
-- engagement_counts: 
-  - original_tweet_count: the number of original tweets (non-retweets, non-replies, non-quote-tweets) user.screen_name has created that are in the dataset
-  - retweet_count: the number of retweets of tweets created by user.screen_name in the dataset
-  - reply_count: the number of replies to tweets created by user.screen_name in the dataset
-  - mention_count: the number of mentions of user.screen_name in the dataset
-- edges_weights: 
-    - the number of users that performed the respective engagement with user1 and user2 in the dataset
+Tweets are read from json files in GCS and processed in the following manner (preprocessing.loading):
+
+1. "Limit tweets" are removed.
+
+2. The full text of the tweet is collected from either the extended_tweet attribute or the retweeted_status (or it's extended_tweet attribute). The same is done for the entities (user mentions being the entities of interest).
+
+3. Tweets are trimmed to contain only relevant attributes.
+
+4. Creation times are localized to IST (+5:30) and all tweets outside the specified window (On or after April 11th 00:00 and before May 25th 00:00 IST) are filtered out.
+
+5. Tweets are filtered out which do not fit one of the following criteria:
+
+* It includes one of the keywords of interest in the full text (step 2) or quoted text.
+* It includes one of the candidates or parties (twitter usernames or other alternative names) in the full text (step 2) or quoted text.
+* It is posted by one of the candidates or parties.
+* It is a retweet of one of the candidates or parties.
+* It is a quote tweet that is quoting one of the candidates or parties.
+* It is posted as a reply to one of the candidates or parties.
+
+6. Duplicates are removed.

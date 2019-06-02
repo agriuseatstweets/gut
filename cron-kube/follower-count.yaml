@@ -1,0 +1,50 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: agrius-gut-follower-counts
+spec:
+  schedule: "0 18 27 5 ?"
+  jobTemplate:
+    spec:
+      completions: 1
+      parallelism: 1
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: agrius-gut-follower-counts
+            image: nandanrao/agrius-gut:0.6
+            resources:
+              requests:
+                cpu: 250m
+                memory: "512Mi"
+            args:
+            - python
+            - main.py
+            - follower-counts
+            - ""
+            envFrom:
+            - secretRef:
+                name: agrius-gut-envs
+            env:
+              - name: GOOGLE_APPLICATION_CREDENTIALS
+                value: "/usr/share/keys/key.json"
+              - name: GOOGLE_PROJECT_ID
+                value: "toixotoixo"
+              - name: GOOGLE_PUBSUB_SUBSCRIPTION
+                value: "agrius-test-belly"
+              - name: BELLY_LOCATION
+                value: "agrius-tweethouse"
+              - name: GUT_LOCATION
+                value: "agrius-outputs"
+              - name: GUT_SHEET_ID
+                value: "1LzH7sHJX6WnFTpTIeSsNV1J_ep61SpugZY_SVQoSDjg"
+            volumeMounts:
+              - name: keys
+                mountPath: /usr/share/keys
+                readOnly: true
+          volumes:
+            - name: keys
+              secret:
+                secretName: agrius-gut-keys
