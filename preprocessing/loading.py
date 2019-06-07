@@ -92,6 +92,13 @@ def filter_start_time(fps, tz):
     return [fp for fp in fps if _is_in_range(tz, fp)]
 
 
+def counter(pre, it):
+    i = 0
+    for x in it:
+        i += 1
+        yield x
+    logging.info(f'{pre}: {i}')
+
 def get_tweets(fps, fs, tz):
     tweets = load_tweets_from_fps(fs, fps)
 
@@ -104,9 +111,11 @@ def get_tweets(fps, fs, tz):
     tweets = (get_tweet_attrs(t, tweet_attrs()) for t in tweets)
     tweets = (set_timezone(t, tz) for t in tweets)
     tweets = filter_tweet_time_range(tweets, tz)
+    tweets = counter('PRE FILTERING', tweets)
 
     # filter non election tweets
     sheets = _sheets_client()
     tweets = only_tweets_of_interest(tweets, sheets)
 
+    tweets = counter('POST FILTERING', tweets)
     return tweets

@@ -11,7 +11,7 @@ spec:
       restartPolicy: OnFailure
       containers:
       - name: agrius-gut-load-tweets
-        image: nandanrao/agrius-gut:0.6
+        image: nandanrao/agrius-gut:0.7
         resources:
           requests:
             cpu: 2500m
@@ -19,6 +19,8 @@ spec:
         args:
         - python
         - load_tweets.py
+        - "9999999999"
+        - "single"
         env:
           - name: GOOGLE_APPLICATION_CREDENTIALS
             value: "/usr/share/keys/key.json"

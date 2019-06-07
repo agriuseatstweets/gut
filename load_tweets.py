@@ -21,7 +21,7 @@ def load_tweets(fps, fs, tz):
     tweets = get_tweets(fps, fs, tz)
     db.load(tweets)
 
-def process(limit=None):
+def process(limit=None, mode='parallel'):
     fs = gcsfs.GCSFileSystem(project=GOOGLE_PROJECT_ID,
                              token=GOOGLE_APPLICATION_CREDENTIALS,
                              access='read_write')
@@ -31,13 +31,16 @@ def process(limit=None):
     fps = filter_start_time(fps, tz)
 
     if limit:
-        fps = fps[-int(limit):]
+        fps = fps[:int(limit)]
 
     logging.info(f'Processing {len(fps)} files')
 
-    Parallel(n_jobs=-1)(delayed(load_tweets)(list(f), fs, tz)
-                        for f in tqdm(chunk(CHUNK_SIZE, fps),
-                                      total=ceil(len(fps)/CHUNK_SIZE)))
+    if mode == 'parallel':
+        Parallel(n_jobs=-1)(delayed(load_tweets)(list(f), fs, tz)
+                            for f in tqdm(chunk(CHUNK_SIZE, fps),
+                                          total=ceil(len(fps)/CHUNK_SIZE)))
+    else:
+        load_tweets(fps, fs, tz)
 
     logging.info(f'Loaded all tweets')
 
