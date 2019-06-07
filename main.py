@@ -6,6 +6,7 @@ from descriptives.get_descriptives import *
 from os.path import join
 from sheets.sheets import get_user_groups, _sheets_client
 from db import RedisDB
+from utils import chunk
 import logging
 
 logging.basicConfig(level = logging.INFO)
@@ -33,6 +34,14 @@ def write_df(fs, fi, df):
     with fs.open(fi, 'w') as f:
         df.to_csv(f, index=False)
 
+def write_out(fs, tweets):
+    timestamp = datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
+    for c in chunk(100000, tweets):
+        with fs.open(make_filename('write-out', timestamp), 'w') as f:
+            for t in c:
+                f.write(f'{t}\n')
+
+
 def process(metric, group):
     fs = gcsfs.GCSFileSystem(project=GOOGLE_PROJECT_ID,
                              token=GOOGLE_APPLICATION_CREDENTIALS,
@@ -49,6 +58,12 @@ def process(metric, group):
 
     if metric == 'follower-counts':
         df = follower_count(user_groups)
+
+    elif metric == 'write-out':
+        db = RedisDB(REDIS_HOST, REDIS_PORT)
+        tweets = db.get_tweets(tz)
+        write_out(fs, tweets)
+
     else:
         db = RedisDB(REDIS_HOST, REDIS_PORT)
         tweets = db.get_tweets(tz)
