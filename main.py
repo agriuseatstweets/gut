@@ -62,7 +62,7 @@ def process(metric, group):
     elif metric == 'write-out':
         db = RedisDB(REDIS_HOST, REDIS_PORT)
         tweets = db.get_tweets(tz)
-        write_out(fs, tweets)
+        return write_out(fs, tweets)
 
     else:
         db = RedisDB(REDIS_HOST, REDIS_PORT)
