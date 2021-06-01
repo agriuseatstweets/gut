@@ -45,4 +45,4 @@ toolz==0.9.0
 tqdm==4.32.1
 tweepy==3.7.0
 uritemplate==3.0.0
-urllib3==1.24.3
+urllib3==1.26.5
